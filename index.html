@@ -265,7 +265,8 @@ tr:hover td{background:#f0f7ff}
         <div style="display:flex;gap:9px">
           <button class="btn btn-s" style="font-size:12px" onclick="syncNow()">🔄 Sincronizar</button>
           <button class="btn btn-s" onclick="newRecord()">➕ Novo Doente</button>
-          <button class="btn btn-p" onclick="exportCSV()" id="export-btn">📥 Exportar CSV</button>
+          <button class="btn btn-s" onclick="exportCSV()" id="export-btn">📥 Exportar CSV</button>
+          <button class="btn btn-p" onclick="exportPDF()" id="export-pdf-btn">🖨️ Exportar PDF</button>
         </div>
       </div>
       <div id="db-loading" style="text-align:center;padding:60px;color:#64748b">
@@ -285,7 +286,7 @@ tr:hover td{background:#f0f7ff}
           <table>
             <thead><tr>
               <th>Nº Processo</th><th>Nome</th><th>Diagnóstico</th>
-              <th>Barthel Adm.</th><th>Barthel Alta</th><th>Tipologia</th>
+              <th>Barthel Adm.</th><th>Barthel Alta</th><th>Morse Adm.</th><th>Morse Alta</th><th>Aval. Fisiatria</th><th>Plano Fisiatria</th><th>Tipologia</th>
               <th>Destino Alta</th><th>Estado</th><th>Por</th><th>Quando</th><th></th>
             </tr></thead>
             <tbody id="db-tbody"></tbody>
@@ -678,7 +679,7 @@ function clearFile(){ clearAllFiles(); }
 // ── AI Extraction ─────────────────────────────────────────────
 const SYSTEM_PROMPT=`És um assistente clínico especializado em análise de relatórios médicos portugueses para a RNCCI.
 Extrai informação clínica e devolve APENAS JSON válido com estes campos (string vazia "" se não disponível):
-{"processo":"","nome":"","dataNasc":"","utente":"","servico":"","cama":"","dataInternamento":"","medico":"","diagnosticoPrincipal":"","comorbilidades":"","barthelAdmissao":"","glasgowAdmissao":"","bradenAdmissao":"","mifAdmissao":"","orientacao":"","comunicacao":"","planoTerapeutico":"","intercorrencias":"","dataFisiatria":"","diagnosticoFuncional":"","objectivosReabilitacao":"","fisioterapia":"","terapiaOcupacional":"","terapiaFala":"","psicologia":"","servicoSocial":"","nutricao":"","barthelAlta":"","mifAlta":"","bradenAlta":"","marchaTransferencias":"","tipologia":"","justificacao":"","necesidadesTecnicas":"","destinoAlta":"","unidadeDestino":"","dataPrevistAlta":"","dataEfectivaAlta":"","estadoActual":"","notasClinias":""}
+{"processo":"","nome":"","dataNasc":"","utente":"","servico":"","cama":"","dataInternamento":"","medico":"","diagnosticoPrincipal":"","comorbilidades":"","barthelAdmissao":"","glasgowAdmissao":"","bradenAdmissao":"","mifAdmissao":"","morseAdmissao":"","orientacao":"","comunicacao":"","planoTerapeutico":"","intercorrencias":"","dataFisiatria":"","diagnosticoFuncional":"","objectivosReabilitacao":"","avaliacaoFisiatria":"","planoFisiatria":"","fisioterapia":"","terapiaOcupacional":"","terapiaFala":"","psicologia":"","servicoSocial":"","nutricao":"","barthelAlta":"","mifAlta":"","bradenAlta":"","morseAlta":"","marchaTransferencias":"","tipologia":"","justificacao":"","necesidadesTecnicas":"","destinoAlta":"","unidadeDestino":"","dataPrevistAlta":"","dataEfectivaAlta":"","estadoActual":"","notasClinias":""}
 Regras: apenas JSON; valores em português; escalas só o número.`;
 
 async function extractAllFiles(){
@@ -990,6 +991,68 @@ function renderKPIs(recs){
       <div style="width:40px;height:40px;border-radius:9px;background:${s.color}18;display:flex;align-items:center;justify-content:center;font-size:19px">${s.icon}</div>
       <div><div style="font-size:22px;font-weight:800;color:${s.color}">${s.value}</div><div style="font-size:11px;color:#64748b">${s.label}</div></div>
     </div>`).join("");
+}
+
+// ── Export PDF (landscape) ───────────────────────────────────
+function exportPDF(){
+  if(!state.records.length){ showNotif("Sem registos para exportar","err"); return; }
+
+  const now = new Date().toLocaleString("pt-PT");
+  const cols = [
+    {key:"processo",    label:"Nº Processo"},
+    {key:"nome",        label:"Nome"},
+    {key:"dataNasc",    label:"Nasc."},
+    {key:"servico",     label:"Serviço"},
+    {key:"dataInternamento", label:"Internamento"},
+    {key:"diagnosticoPrincipal", label:"Diagnóstico Principal"},
+    {key:"barthelAdmissao", label:"Barthel Adm."},
+    {key:"barthelAlta",     label:"Barthel Alta"},
+    {key:"mifAdmissao",     label:"MIF Adm."},
+    {key:"mifAlta",         label:"MIF Alta"},
+    {key:"morseAdmissao",        label:"Escala de Morse Admissão (0–125)", group:"admissao"},
+  {key:"morseAlta",            label:"Escala de Morse Alta (0–125)",     group:"evolucaoFuncional"},
+    {key:"tipologia",       label:"Tipologia RNCCI"},
+    {key:"destinoAlta",     label:"Destino Alta"},
+    {key:"estadoActual",    label:"Estado"},
+    {key:"_savedBy",        label:"Registado por"},
+    {key:"_savedAt",        label:"Data Registo"},
+  ];
+
+  const rows = state.records.map(r =>
+    cols.map(c => `<td style="padding:5px 8px;border:1px solid #ddd;font-size:10px;white-space:nowrap">${r[c.key]||"—"}</td>`).join("")
+  );
+
+  const html = `<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>RNCCI — Base de Dados</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  body { font-family: Arial, sans-serif; font-size: 11px; color: #1a2332; }
+  h1 { font-size: 14px; color: #1e4d7a; margin-bottom: 2px; }
+  .sub { font-size: 10px; color: #64748b; margin-bottom: 14px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #1e4d7a; color: #fff; padding: 6px 8px; font-size: 10px; text-align: left; white-space: nowrap; border: 1px solid #1e4d7a; }
+  tr:nth-child(even) td { background: #f0f4f8; }
+  .footer { margin-top: 10px; font-size: 9px; color: #94a3b8; text-align: right; }
+</style>
+</head>
+<body>
+  <h1>Protocolo Público ULSSA | TS HEFP — Gestão Dados Clínicos</h1>
+  <div class="sub">Base de Dados RNCCI · ${state.records.length} doente${state.records.length!==1?"s":""} · Exportado em ${now}</div>
+  <table>
+    <thead><tr>${cols.map(c=>`<th>${c.label}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r}</tr>`).join("")}</tbody>
+  </table>
+  <div class="footer">Gerado automaticamente · Protocolo Público ULSSA | TS HEFP</div>
+  <script>window.onload=()=>{window.print();}<\/script>
+</body>
+</html>`;
+
+  const win = window.open("","_blank");
+  win.document.write(html);
+  win.document.close();
 }
 
 // ── Export CSV ────────────────────────────────────────────────
