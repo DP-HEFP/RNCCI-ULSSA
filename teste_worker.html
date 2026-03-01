@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Teste Worker</title></head>
+<body>
+<h2>Teste Cloudflare Worker</h2>
+<button onclick="testPUT()">Testar PUT (Guardar)</button>
+<button onclick="testGET()">Testar GET (Ler)</button>
+<pre id="result" style="background:#f1f5f9;padding:16px;margin-top:16px;border-radius:8px;word-break:break-all"></pre>
+<script>
+const URL = "https://rncci-ulssa.diogopecegueiro.workers.dev";
+async function testGET(){
+  document.getElementById("result").textContent = "A testar GET...";
+  try{
+    const r = await fetch(URL);
+    const t = await r.text();
+    document.getElementById("result").textContent = "GET Status: " + r.status + "\n" + t;
+  }catch(e){ document.getElementById("result").textContent = "GET Erro: " + e.message; }
+}
+async function testPUT(){
+  document.getElementById("result").textContent = "A testar PUT...";
+  try{
+    const r = await fetch(URL, {
+      method:"PUT",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({records:[{teste:"ok",timestamp:new Date().toISOString()}]})
+    });
+    const t = await r.text();
+    document.getElementById("result").textContent = "PUT Status: " + r.status + "\n" + t;
+  }catch(e){ document.getElementById("result").textContent = "PUT Erro: " + e.message; }
+}
+</script>
+</body>
+</html>
