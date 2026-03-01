@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protocolo Público ULSSA | TS HEFP — Gestão Dados Clínicos</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans','Segoe UI',sans-serif;background:#f0f4f8;color:#1a2332;min-height:100vh}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:#e8edf3}::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:3px}
+
+/* Layout */
+#app{display:none}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#0f2d4a,#1e4d7a,#2563a8)}
+.login-card{background:#fff;border-radius:20px;padding:44px 48px;max-width:440px;width:90%;box-shadow:0 24px 64px rgba(0,0,0,.25);text-align:center}
+
+/* Header */
+.header{background:linear-gradient(135deg,#0f2d4a 0%,#1e4d7a 60%,#2563a8 100%);padding:0 32px;box-shadow:0 2px 20px rgba(0,0,0,.2)}
+.header-inner{max-width:1160px;margin:0 auto}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:18px 0 0}
+.tabs{display:flex;gap:4px;margin-top:14px}
+.tab-btn{padding:10px 22px;border:none;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;border-radius:6px 6px 0 0;transition:all .2s;background:transparent;color:rgba(255,255,255,.7);border-bottom:3px solid transparent}
+.tab-btn:hover{color:#fff;background:rgba(255,255,255,.1)}
+.tab-btn.active{background:#fff;color:#1e4d7a;border-bottom:3px solid #1e4d7a}
+
+/* Content */
+.content{max-width:1160px;margin:0 auto;padding:26px 32px}
+.panel{background:#fff;border-radius:14px;border:1.5px solid #dbe8f4;overflow:hidden;margin-bottom:14px}
+.panel-header{padding:11px 20px;display:flex;align-items:center;gap:10;color:#fff;font-weight:700;font-size:14px}
+.panel-body{padding:18px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:13px}
+
+/* Forms */
+.fi{width:100%;border:1.5px solid #d1dae5;border-radius:6px;padding:8px 12px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;background:#fff;color:#1a2332;outline:none;transition:border .2s,box-shadow .2s;resize:vertical}
+.fi:focus{border-color:#1e4d7a;box-shadow:0 0 0 3px rgba(30,77,122,.1)}
+.fi.filled{background:#f0f7ff;border-color:#93c5fd}
+label.field-label{font-size:12px;font-weight:600;color:#475569;display:flex;align-items:center;gap:5px;margin-bottom:4px}
+
+/* Buttons */
+.btn{padding:10px 20px;border:none;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:#1e4d7a;color:#fff}.btn-p:hover{background:#163d62;box-shadow:0 4px 12px rgba(30,77,122,.35);transform:translateY(-1px)}
+.btn-p:disabled{background:#94a3b8;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-s{background:#fff;color:#1e4d7a;border:2px solid #1e4d7a}.btn-s:hover{background:#f0f7ff}
+.btn-g{background:#059669;color:#fff}.btn-g:hover{background:#047857}
+.btn-r{background:#fff;color:#dc2626;border:1.5px solid #fca5a5}.btn-r:hover{background:#fef2f2}
+
+/* Drop zone */
+.drop-zone{border:2.5px dashed #94a3b8;border-radius:16px;padding:52px 40px;text-align:center;transition:all .25s;cursor:pointer;background:#fafbfc}
+.drop-zone:hover,.drop-zone.drag{border-color:#1e4d7a;background:#f0f7ff}
+
+/* Badge */
+.badge{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600}
+
+/* Progress */
+.pbar{height:6px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+.pfill{height:100%;background:linear-gradient(90deg,#1e4d7a,#3b82f6);border-radius:99px;transition:width .5s ease}
+
+/* Spinner */
+.spin{border-radius:50%;animation:sp .8s linear infinite;display:inline-block;border:2.5px solid rgba(30,77,122,.2);border-top-color:#1e4d7a}
+@keyframes sp{to{transform:rotate(360deg)}}
+.pulse{animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+
+/* Notifications */
+.notif{position:fixed;bottom:28px;right:28px;color:#fff;padding:13px 22px;border-radius:12px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:su .3s ease;z-index:9999;display:flex;align-items:center;gap:8px}
+.notif-ok{background:#059669}
+.notif-err{background:#dc2626}
+@keyframes su{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9998}
+.modal{background:#fff;border-radius:16px;padding:32px;max-width:480px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:11px 14px;color:#fff;font-weight:600;text-align:left;white-space:nowrap;font-size:12px;background:#1e4d7a}
+td{padding:11px 14px;border-bottom:1px solid #e8edf3}
+tr:nth-child(even){background:#fafbfc}
+tr:hover td{background:#f0f7ff}
+.fade-in{animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.grid2{display:grid;grid-template-columns:1fr 310px;gap:22px}
+.card{background:#fff;border-radius:14px;padding:20px;border:1.5px solid #dbe8f4}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:13px;margin-top:18px}
+.kpi-card{background:#fff;border-radius:12px;padding:15px 18px;border:1.5px solid #dbe8f4;display:flex;align-items:center;gap:13px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;display:inline-block;box-shadow:0 0 6px #4ade80;animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Settings */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f1f5f9}
+.settings-row:last-child{border-bottom:none}
+
+@media(max-width:768px){.grid2{grid-template-columns:1fr}.header{padding:0 16px}.content{padding:16px}.login-card{padding:28px 24px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div style="font-size:52px;margin-bottom:16px">🏥</div>
+    <div style="font-weight:800;font-size:20px;color:#1e4d7a;margin-bottom:6px">Protocolo Público ULSSA | TS HEFP</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:32px">Gestão Dados Clínicos · Base Partilhada</div>
+    <div style="text-align:left;margin-bottom:8px"><label style="font-size:13px;font-weight:600;color:#475569">Nome / Identificação profissional</label></div>
+    <input id="login-name" class="fi" type="text" placeholder="Ex: Dr. Silva / Enf. Costa / TS Maria..." style="margin-bottom:12px" />
+    <button class="btn btn-p" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="doLogin()">Entrar na Base de Dados</button>
+    <div style="margin-top:20px;font-size:12px;color:#94a3b8;line-height:1.6">
+      ⚠️ Esta base de dados é <b>partilhada</b> entre toda a equipa.<br>Os dados clínicos são confidenciais.
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-inner">
+      <div class="header-top">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:22px">🏥</div>
+          <div>
+            <div style="color:#fff;font-weight:800;font-size:17px;letter-spacing:-.3px">Protocolo Público ULSSA | TS HEFP</div>
+            <div style="color:rgba(255,255,255,.7);font-size:12px;margin-top:1px">Gestão Dados Clínicos</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:99px;background:rgba(99,102,241,.2);color:#a5b4fc;font-size:11px;font-weight:600">
+            <span class="sync-dot"></span> Base Partilhada
+          </div>
+          <button class="btn" style="background:rgba(255,255,255,.1);color:#fff;padding:6px 12px;font-size:12px" onclick="syncNow()">🔄 Sincronizar</button>
+          <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border-radius:8px;padding:6px 14px">
+            <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px">👤</div>
+            <div>
+              <div style="color:#fff;font-weight:600;font-size:12px" id="header-username">—</div>
+              <div style="color:rgba(255,255,255,.55);font-size:10px" id="header-sync">—</div>
+            </div>
+            <button onclick="doLogout()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:18px;line-height:1" title="Mudar utilizador">×</button>
+          </div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="showTab('upload',this)">📤 Upload & Extracção</button>
+        <button class="tab-btn" onclick="showTab('form',this)">📋 Formulário Clínico</button>
+        <button class="tab-btn" id="tab-db-btn" onclick="showTab('database',this)">🗄️ Base Partilhada</button>
+        <button class="tab-btn" onclick="askSettingsPassword(this)">⚙️ Configurações</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABS CONTENT -->
+  <div class="content">
+
+    <!-- UPLOAD TAB -->
+    <div id="tab-upload" class="fade-in">
+      <div class="grid2">
+        <div>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+            ondragover="event.preventDefault();this.classList.add('drag')"
+            ondragleave="this.classList.remove('drag')"
+            ondrop="handleDropMulti(event)">
+            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt" multiple style="display:none" onchange="handleMultiFileSelect(this.files)">
+            <div id="dz-icon" style="font-size:46px;margin-bottom:14px">📁</div>
+            <div id="dz-title" style="font-weight:700;font-size:17px;margin-bottom:8px">Arraste um ou vários relatórios aqui</div>
+            <div id="dz-sub" style="color:#64748b;font-size:14px">ou clique para seleccionar (múltiplos ficheiros permitidos)</div>
+            <div style="margin-top:14px;display:flex;gap:8px;justify-content:center" id="dz-badges">
+              <span class="badge" style="background:#e8edf3;color:#475569">PDF</span>
+              <span class="badge" style="background:#e8edf3;color:#475569">PNG</span>
+              <span class="badge" style="background:#e8edf3;color:#475569">JPG</span>
+              <span class="badge" style="background:#e8edf3;color:#475569">TXT</span>
+              <span class="badge" style="background:#dbeafe;color:#1d4ed8">Múltiplos</span>
+            </div>
+          </div>
+          <!-- File queue -->
+          <div id="file-queue" style="display:none;margin-top:14px"></div>
+          <div id="file-actions" style="display:none;margin-top:14px;gap:12px">
+            <button class="btn btn-p" style="flex:1;justify-content:center;font-size:15px" onclick="askUploadPassword()" id="extract-btn">✨ Extrair todos com IA</button>
+            <button class="btn btn-s" onclick="clearAllFiles()">Limpar</button>
+          </div>
+          <div id="extract-status" style="margin-top:14px"></div>
+
+          <!-- JSON PASTE MODE -->
+          <div style="margin-top:20px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div style="flex:1;height:1px;background:#e2e8f0"></div>
+              <span style="font-size:12px;color:#94a3b8;font-weight:600;white-space:nowrap">OU SEM CHAVE API</span>
+              <div style="flex:1;height:1px;background:#e2e8f0"></div>
+            </div>
+            <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:18px 20px">
+              <div style="font-weight:700;font-size:14px;color:#92400e;margin-bottom:6px">📋 Colar JSON do Claude.ai</div>
+              <div style="font-size:12px;color:#78350f;margin-bottom:14px;line-height:1.6">
+                Sem chave API? Use o <b>Claude.ai gratuito</b>:<br>
+                1. Abra <a href="https://claude.ai" target="_blank" style="color:#1e4d7a;font-weight:600">claude.ai</a> e cole o texto do relatório<br>
+                2. Peça: <i style="background:#fef3c7;padding:2px 6px;border-radius:4px">"Extrai os dados clínicos em JSON para RNCCI"</i><br>
+                3. Copie a resposta JSON e cole aqui:
+              </div>
+              <textarea id="json-paste-area" class="fi" rows="5"
+                placeholder='Cole aqui o JSON devolvido pelo Claude.ai...&#10;&#10;Exemplo: {"nome":"Maria Silva","diagnosticoPrincipal":"AVC","barthelAdmissao":"25",...}'
+                style="font-family:monospace;font-size:12px;background:#fff"></textarea>
+              <div style="display:flex;gap:10px;margin-top:10px">
+                <button class="btn btn-p" style="flex:1;justify-content:center" onclick="askJsonPastePassword()">
+                  📥 Importar para Formulário
+                </button>
+                <button class="btn btn-s" style="font-size:12px" onclick="document.getElementById('json-paste-area').value=''">Limpar</button>
+              </div>
+              <div id="json-import-result" style="margin-top:10px"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="card">
+            <div style="font-weight:700;font-size:13px;color:#1e4d7a;margin-bottom:12px">🌐 Base Partilhada</div>
+            <div style="font-size:12px;color:#64748b;line-height:1.7;margin-bottom:12px">
+              Todos os registos são <b style="color:#7c3aed">partilhados em tempo real</b> entre toda a equipa. Qualquer utilizador pode aceder sem precisar de conta Claude.
+            </div>
+            <div style="padding:10px 13px;background:#f5f3ff;border-radius:8px;border:1px solid #ddd6fe;font-size:12px;color:#6d28d9;font-weight:600;margin-bottom:8px">👥 Acesso livre para toda a equipa</div>
+            <div style="padding:10px 13px;background:#f0fdf4;border-radius:8px;border:1px solid #86efac;font-size:12px;color:#166534;font-weight:600">🔄 Sincroniza automaticamente</div>
+          </div>
+          <div class="card">
+            <div style="font-weight:700;font-size:13px;color:#1e4d7a;margin-bottom:14px">⚡ Como funciona</div>
+            <div id="ai-status-info"></div>
+          </div>
+          <div class="card" id="ai-key-warning" style="display:none;background:#fffbeb;border-color:#fde68a">
+            <div style="font-weight:700;font-size:13px;color:#92400e;margin-bottom:8px">⚠️ Chave API não configurada</div>
+            <div style="font-size:12px;color:#78350f;margin-bottom:10px">A extracção por IA requer uma chave API da Anthropic. Configure em ⚙️ Configurações.</div>
+            <button class="btn btn-p" style="font-size:12px;padding:7px 14px" onclick="showTab('settings',document.querySelectorAll('.tab-btn')[3])">Ir para Configurações</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM TAB -->
+    <div id="tab-form" style="display:none" class="fade-in">
+      <div style="background:#fff;border-radius:12px;padding:14px 22px;margin-bottom:18px;border:1.5px solid #dbe8f4;display:flex;align-items:center;gap:20px">
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+            <span style="font-weight:600;font-size:14px">Campos preenchidos</span>
+            <span style="font-weight:700;font-size:14px;color:#1e4d7a" id="form-progress-label">0/40 (0%)</span>
+          </div>
+          <div class="pbar"><div class="pfill" id="form-progress-bar" style="width:0%"></div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#64748b">
+          A guardar como: <span style="font-weight:700;color:#1e4d7a" id="form-username-label">—</span>
+        </div>
+        <button class="btn btn-g" onclick="saveRecord()" id="save-btn">💾 Guardar e Partilhar</button>
+      </div>
+      <div id="form-groups"></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;padding-top:8px">
+        <button class="btn btn-s" onclick="clearForm()">Limpar Formulário</button>
+        <button class="btn btn-g" onclick="saveRecord()">💾 Guardar e Partilhar</button>
+      </div>
+    </div>
+
+    <!-- DATABASE TAB -->
+    <div id="tab-database" style="display:none" class="fade-in">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div>
+          <div style="font-weight:700;font-size:20px">Base de Dados Partilhada — RNCCI</div>
+          <div style="color:#64748b;font-size:13px;margin-top:3px;display:flex;align-items:center;gap:8px">
+            <span id="db-count">0 doentes</span>
+            <span class="badge" style="background:#f5f3ff;color:#6d28d9">🌐 Partilhada</span>
+            <span style="font-size:11px;color:#94a3b8" id="db-sync-label"></span>
+          </div>
+        </div>
+        <div style="display:flex;gap:9px">
+          <button class="btn btn-s" style="font-size:12px" onclick="syncNow()">🔄 Sincronizar</button>
+          <button class="btn btn-s" onclick="newRecord()">➕ Novo Doente</button>
+          <button class="btn btn-s" onclick="exportCSV()" id="export-btn">📥 Exportar CSV</button>
+          <button class="btn btn-p" onclick="exportPDF()" id="export-pdf-btn">🖨️ Exportar PDF</button>
+        </div>
+      </div>
+      <div id="db-loading" style="text-align:center;padding:60px;color:#64748b">
+        <div class="spin" style="width:32px;height:32px;margin:0 auto 16px"></div>
+        <div>A carregar base de dados partilhada…</div>
+      </div>
+      <div id="db-empty" style="display:none">
+        <div style="background:#fff;border-radius:16px;padding:60px 40px;text-align:center;border:1.5px solid #dbe8f4">
+          <div style="font-size:50px;margin-bottom:14px">🗄️</div>
+          <div style="font-weight:700;font-size:17px;margin-bottom:8px">Base de dados vazia</div>
+          <div style="color:#64748b;font-size:14px;margin-bottom:22px">Ainda não há registos. Seja o primeiro a adicionar um doente.</div>
+          <button class="btn btn-p" onclick="showTab('upload',document.querySelectorAll('.tab-btn')[0])">Fazer Upload</button>
+        </div>
+      </div>
+      <div id="db-table-wrap" style="display:none;background:#fff;border-radius:14px;border:1.5px solid #dbe8f4;overflow:hidden">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Nº Processo</th><th>Nome</th><th>Diagnóstico</th>
+              <th>Barthel Adm.</th><th>Barthel Alta</th><th>Morse Adm.</th><th>Morse Alta</th><th>Aval. Fisiatria</th><th>Plano Fisiatria</th><th>Tipologia</th>
+              <th>Destino Alta</th><th>Estado</th><th>Por</th><th>Quando</th><th></th>
+            </tr></thead>
+            <tbody id="db-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="kpi-grid" class="kpi-grid" style="display:none"></div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" style="display:none" class="fade-in">
+      <div style="max-width:640px">
+        <div style="font-weight:700;font-size:20px;margin-bottom:6px">Configurações</div>
+        <div style="color:#64748b;font-size:14px;margin-bottom:24px">Configure a aplicação e as integrações</div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-weight:700;font-size:15px;color:#1e4d7a;margin-bottom:4px">🔑 Chave API Anthropic (IA)</div>
+          <div style="font-size:13px;color:#64748b;margin-bottom:16px">
+            Necessária para a extracção automática de dados clínicos. Obtenha em
+            <a href="https://console.anthropic.com" target="_blank" style="color:#1e4d7a">console.anthropic.com</a>.
+            A chave fica guardada localmente no browser.
+          </div>
+          <div class="settings-row">
+            <div>
+              <div style="font-weight:600;font-size:13px">Chave API (sk-ant-...)</div>
+              <div style="font-size:12px;color:#64748b;margin-top:2px" id="api-key-status">Não configurada</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="password" id="api-key-input" class="fi" placeholder="sk-ant-api03-..." style="width:260px">
+              <button class="btn btn-p" style="padding:8px 16px;font-size:12px" onclick="saveApiKey()">Guardar</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div style="font-weight:600;font-size:13px">Estado da IA</div>
+            </div>
+            <div id="ai-key-badge"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-weight:700;font-size:15px;color:#1e4d7a;margin-bottom:4px">🗄️ Base de Dados Partilhada (JSONBin)</div>
+          <div style="font-size:13px;color:#64748b;margin-bottom:16px">
+            Para partilhar dados entre utilizadores, configure um bin gratuito em
+            <a href="https://jsonbin.io" target="_blank" style="color:#1e4d7a">jsonbin.io</a>.
+            Crie conta gratuita → New Bin → copie o BIN ID e a Master Key.
+          </div>
+          <div class="settings-row">
+            <div><div style="font-weight:600;font-size:13px">JSONBin BIN ID</div><div style="font-size:12px;color:#64748b">Ex: 65f3a2...</div></div>
+            <input type="text" id="jsonbin-id" class="fi" placeholder="65f3a2c9..." style="width:260px">
+          </div>
+          <div class="settings-row">
+            <div><div style="font-weight:600;font-size:13px">JSONBin Master Key</div><div style="font-size:12px;color:#64748b">$2a$10$...</div></div>
+            <input type="password" id="jsonbin-key" class="fi" placeholder="$2a$10$..." style="width:260px">
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-p" style="font-size:12px" onclick="saveJsonBinSettings()">💾 Guardar Configurações</button>
+            <button class="btn btn-s" style="font-size:12px" onclick="testJsonBin()">🔌 Testar Ligação</button>
+          </div>
+          <div id="jsonbin-test-result" style="margin-top:12px;font-size:13px"></div>
+          <div style="margin-top:16px;padding:12px;background:#f0f7ff;border-radius:8px;border:1px solid #bfdbfe;font-size:12px;color:#1e40af">
+            <b>ℹ️ Como criar um JSONBin gratuito:</b><br>
+            1. Aceda a <b>jsonbin.io</b> e crie conta gratuita<br>
+            2. Clique em <b>"+ New Bin"</b> e cole <code>{"records":[],"index":[]}</code><br>
+            3. Copie o <b>BIN ID</b> do URL<br>
+            4. Em <b>API Keys</b> crie ou copie a <b>Master Key</b><br>
+            5. Cole ambos acima e clique "Guardar Configurações"
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:700;font-size:15px;color:#dc2626;margin-bottom:12px">⚠️ Zona de Perigo</div>
+          <div class="settings-row">
+            <div><div style="font-weight:600;font-size:13px">Limpar dados locais</div><div style="font-size:12px;color:#64748b">Remove configurações guardadas no browser</div></div>
+            <button class="btn btn-r" style="font-size:12px" onclick="clearLocalData()">Limpar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="modal" style="display:none" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div id="modal-content"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px" id="modal-actions"></div>
+  </div>
+</div>
+
+<script>
+// ── Config & State ───────────────────────────────────────────
+const FIELDS = [
+  {key:"processo",             label:"Nº Processo",                        group:"identificacao"},
+  {key:"nome",                 label:"Nome Completo",                      group:"identificacao"},
+  {key:"dataNasc",             label:"Data de Nascimento",                 group:"identificacao"},
+  {key:"utente",               label:"Nº Utente SNS",                     group:"identificacao"},
+  {key:"servico",              label:"Serviço / Enfermaria",               group:"identificacao"},
+  {key:"cama",                 label:"Cama",                               group:"identificacao"},
+  {key:"dataInternamento",     label:"Data de Internamento",               group:"identificacao"},
+  {key:"medico",               label:"Médico Responsável",                 group:"identificacao"},
+  {key:"diagnosticoPrincipal", label:"Diagnóstico Principal",              group:"admissao"},
+  {key:"comorbilidades",       label:"Comorbilidades",                     group:"admissao"},
+  {key:"barthelAdmissao",      label:"Barthel Admissão (0–100)",           group:"admissao"},
+  {key:"glasgowAdmissao",      label:"Glasgow Admissão (3–15)",            group:"admissao"},
+  {key:"bradenAdmissao",       label:"Braden Admissão (6–23)",             group:"admissao"},
+  {key:"mifAdmissao",          label:"MIF Admissão (18–126)",              group:"admissao"},
+  {key:"morseAdmissao",        label:"Escala de Morse Admissão (0–125)",   group:"admissao"},
+  {key:"orientacao",           label:"Orientação",                         group:"estadoCognitivo"},
+  {key:"comunicacao",          label:"Comunicação",                        group:"estadoCognitivo"},
+  {key:"planoTerapeutico",     label:"Plano Terapêutico Inicial",          group:"plano"},
+  {key:"intercorrencias",      label:"Intercorrências",                    group:"evolucao"},
+  {key:"dataFisiatria",        label:"Data Avaliação Fisiatria",           group:"evolucao"},
+  {key:"diagnosticoFuncional", label:"Diagnóstico Funcional",              group:"evolucao"},
+  {key:"objectivosReabilitacao",label:"Objectivos Reabilitação",           group:"evolucao"},
+  {key:"avaliacaoFisiatria",   label:"Avaliação de Fisiatria",             group:"evolucao"},
+  {key:"planoFisiatria",       label:"Plano de Fisiatria",                 group:"evolucao"},
+  {key:"fisioterapia",         label:"Fisioterapia",                       group:"terapias"},
+  {key:"terapiaOcupacional",   label:"Terapia Ocupacional",                group:"terapias"},
+  {key:"terapiaFala",          label:"Terapia da Fala",                    group:"terapias"},
+  {key:"psicologia",           label:"Psicologia",                         group:"terapias"},
+  {key:"servicoSocial",        label:"Serviço Social",                     group:"terapias"},
+  {key:"nutricao",             label:"Nutrição / Dietética",               group:"terapias"},
+  {key:"barthelAlta",          label:"Barthel Alta (0–100)",               group:"evolucaoFuncional"},
+  {key:"mifAlta",              label:"MIF Alta (18–126)",                  group:"evolucaoFuncional"},
+  {key:"bradenAlta",           label:"Braden Alta (6–23)",                 group:"evolucaoFuncional"},
+  {key:"morseAlta",            label:"Escala de Morse Alta (0–125)",       group:"evolucaoFuncional"},
+  {key:"marchaTransferencias", label:"Marcha / Transferências",            group:"evolucaoFuncional"},
+  {key:"tipologia",            label:"Tipologia Proposta",                 group:"rncci"},
+  {key:"justificacao",         label:"Justificação Clínica",               group:"rncci"},
+  {key:"necesidadesTecnicas",  label:"Necessidades Técnicas",              group:"rncci"},
+  {key:"destinoAlta",          label:"Destino Alta",                       group:"alta"},
+  {key:"unidadeDestino",       label:"Unidade / Local de Destino",         group:"alta"},
+  {key:"dataPrevistAlta",      label:"Data Prevista Alta",                 group:"alta"},
+  {key:"dataEfectivaAlta",     label:"Data Efectiva Alta",                 group:"alta"},
+  {key:"estadoActual",         label:"Estado Actual",                      group:"alta"},
+  {key:"notasClinias",         label:"Notas Clínicas",                     group:"alta"},
+];
+
+const GROUPS = {
+  identificacao:    {label:"Identificação",icon:"👤",color:"#1e4d7a"},
+  admissao:         {label:"Admissão",icon:"🏥",color:"#2563a8"},
+  estadoCognitivo:  {label:"Estado Cognitivo",icon:"🧠",color:"#1e6e96"},
+  plano:            {label:"Plano Terapêutico",icon:"📋",color:"#2563a8"},
+  evolucao:         {label:"Evolução Clínica & Fisiatria",icon:"📈",color:"#1e4d7a"},
+  terapias:         {label:"Terapias",icon:"🩺",color:"#1e6e96"},
+  evolucaoFuncional:{label:"Evolução Funcional",icon:"🔄",color:"#2563a8"},
+  rncci:            {label:"Proposta RNCCI",icon:"📝",color:"#1e4d7a"},
+  alta:             {label:"Alta & Destino",icon:"🚪",color:"#1e6e96"},
+};
+
+const LONG_FIELDS = new Set(["planoTerapeutico","intercorrencias","comorbilidades","justificacao","notasClinias","objectivosReabilitacao","diagnosticoFuncional","fisioterapia","avaliacaoFisiatria","planoFisiatria"]);
+const EMPTY = Object.fromEntries(FIELDS.map(f=>[f.key,""]));
+
+let state = {
+  user: "",
+  records: [],
+  editData: {...EMPTY},
+  confidence: {},
+  file: null, fileB64: null, fileType: null, fileText: "",
+  lastSync: null,
+  apiKey: "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",
+  jsonBinId: "69a43379ae596e708f550056",
+  jsonBinKey: "$2a$10$WSwa2GSR2kjrgHPSZ0alteVav5m/MWjnizdGQUvTlsEiDLM6Jiduy",
+};
+
+// ── LocalStorage ─────────────────────────────────────────────
+function lsGet(k){try{return localStorage.getItem(k);}catch{return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch{}}
+
+// ── JSONBin (base partilhada) ─────────────────────────────────
+async function jbGet(){
+  const {jsonBinId,jsonBinKey}=state;
+  if(!jsonBinId||!jsonBinKey) return null;
+  try{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${jsonBinId}/latest`,{
+      headers:{"X-Master-Key":jsonBinKey,"X-Bin-Meta":false}
+    });
+    if(!r.ok) return null;
+    const d=await r.json();
+    return d.record||d;
+  }catch{return null;}
+}
+
+async function jbSet(data){
+  const {jsonBinId,jsonBinKey}=state;
+  if(!jsonBinId||!jsonBinKey) return false;
+  try{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${jsonBinId}`,{
+      method:"PUT",
+      headers:{"Content-Type":"application/json","X-Master-Key":jsonBinKey},
+      body:JSON.stringify(data)
+    });
+    return r.ok;
+  }catch{return false;}
+}
+
+// ── Load & Save records ──────────────────────────────────────
+async function loadRecords(){
+  const d=await jbGet();
+  if(d&&Array.isArray(d.records)){
+    state.records=d.records;
+  } else {
+    // Fallback: localStorage
+    try{state.records=JSON.parse(lsGet("rncci_records")||"[]");}catch{state.records=[];}
+  }
+  state.lastSync=new Date();
+}
+
+async function saveRecords(){
+  // Guardar no JSONBin (partilhado)
+  const ok=await jbSet({records:state.records});
+  // Sempre guardar também em localStorage como fallback
+  lsSet("rncci_records",JSON.stringify(state.records));
+  return ok;
+}
+
+// ── Login ────────────────────────────────────────────────────
+function doLogin(){
+  const name=document.getElementById("login-name").value.trim();
+  if(!name){showNotif("Por favor insira o seu nome","err");return;}
+  state.user=name;
+  lsSet("rncci_user",name);
+  document.getElementById("login-screen").style.display="none";
+  document.getElementById("app").style.display="block";
+  initApp();
+}
+
+document.getElementById("login-name").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+
+function doLogout(){
+  document.getElementById("app").style.display="none";
+  document.getElementById("login-screen").style.display="flex";
+  document.getElementById("login-name").value="";
+}
+
+// ── Init ─────────────────────────────────────────────────────
+async function initApp(){
+  // Restaurar configurações (localStorage sobrepõe os valores embutidos se existirem)
+  state.apiKey=lsGet("rncci_apikey")||state.apiKey;
+  state.jsonBinId=lsGet("rncci_jbid")||state.jsonBinId;
+  state.jsonBinKey=lsGet("rncci_jbkey")||state.jsonBinKey;
+
+  document.getElementById("header-username").textContent=state.user;
+  document.getElementById("form-username-label").textContent=state.user;
+
+  updateSettingsUI();
+  buildFormGroups();
+  renderAIInfo();
+
+  // Auto-sincronizar a cada 30s
+  setInterval(syncNow,30000);
+
+  showTab("upload",document.querySelectorAll(".tab-btn")[0]);
+  await syncNow();
+}
+
+// ── Sync ─────────────────────────────────────────────────────
+async function syncNow(){
+  await loadRecords();
+  renderDB();
+  const t=state.lastSync?state.lastSync.toLocaleTimeString("pt-PT"):"—";
+  document.getElementById("header-sync").textContent=`Sync: ${t}`;
+  if(document.getElementById("db-sync-label"))
+    document.getElementById("db-sync-label").textContent=`Última sync: ${t}`;
+}
+
+// ── Tabs ─────────────────────────────────────────────────────
+let settingsUnlocked = false;
+
+function askSettingsPassword(btn){
+  if(settingsUnlocked){ showTab("settings",btn); return; }
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Configurações protegidas</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:16px">Introduza a palavra-passe para aceder às configurações.</div>
+    <input type="password" id="settings-pw-input" class="fi" placeholder="Palavra-passe…" style="margin-bottom:4px"
+      onkeydown="if(event.key==='Enter')checkSettingsPassword()">
+    <div id="settings-pw-error" style="color:#dc2626;font-size:12px;margin-top:6px;display:none">❌ Palavra-passe incorrecta</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-p" onclick="checkSettingsPassword()">🔓 Entrar</button>`;
+  document.getElementById("modal").style.display="flex";
+  setTimeout(()=>document.getElementById("settings-pw-input").focus(),100);
+  // store btn ref
+  window._settingsBtn = btn;
+}
+
+let uploadUnlocked = false;
+
+function askUploadPassword(){
+  if(uploadUnlocked){ extractAllFiles(); return; }
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Área protegida</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:16px">Introduza a palavra-passe para usar a extracção por IA.</div>
+    <input type="password" id="upload-pw-input" class="fi" placeholder="Palavra-passe…" style="margin-bottom:4px"
+      onkeydown="if(event.key==='Enter')checkUploadPassword('extract')">
+    <div id="upload-pw-error" style="color:#dc2626;font-size:12px;margin-top:6px;display:none">❌ Palavra-passe incorrecta</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-p" onclick="checkUploadPassword('extract')">🔓 Entrar</button>`;
+  document.getElementById("modal").style.display="flex";
+  setTimeout(()=>document.getElementById("upload-pw-input").focus(),100);
+}
+
+function askJsonPastePassword(){
+  if(uploadUnlocked){ importFromJSON(); return; }
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Área protegida</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:16px">Introduza a palavra-passe para importar dados por JSON.</div>
+    <input type="password" id="upload-pw-input" class="fi" placeholder="Palavra-passe…" style="margin-bottom:4px"
+      onkeydown="if(event.key==='Enter')checkUploadPassword('json')">
+    <div id="upload-pw-error" style="color:#dc2626;font-size:12px;margin-top:6px;display:none">❌ Palavra-passe incorrecta</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-p" onclick="checkUploadPassword('json')">🔓 Entrar</button>`;
+  document.getElementById("modal").style.display="flex";
+  setTimeout(()=>document.getElementById("upload-pw-input").focus(),100);
+}
+
+function checkUploadPassword(action){
+  const val = document.getElementById("upload-pw-input").value;
+  if(val === "Dinisclara1"){
+    uploadUnlocked = true;
+    closeModal();
+    if(action==="extract") extractAllFiles();
+    else if(action==="json") importFromJSON();
+  } else {
+    document.getElementById("upload-pw-error").style.display="block";
+    document.getElementById("upload-pw-input").value="";
+    document.getElementById("upload-pw-input").focus();
+  }
+}
+
+function checkSettingsPassword(){
+  const val = document.getElementById("settings-pw-input").value;
+  if(val === "Dinisclara1"){
+    settingsUnlocked = true;
+    closeModal();
+    showTab("settings", window._settingsBtn);
+  } else {
+    document.getElementById("settings-pw-error").style.display="block";
+    document.getElementById("settings-pw-input").value="";
+    document.getElementById("settings-pw-input").focus();
+  }
+}
+
+function showTab(name,btn){
+  ["upload","form","database","settings"].forEach(t=>{
+    document.getElementById("tab-"+t).style.display=t===name?"block":"none";
+  });
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  if(name==="database") syncNow();
+}
+
+// ── File handling (multi-file) ───────────────────────────────
+let fileQueue = []; // [{file, b64, type, text, status:'pending'|'done'|'error', name}]
+
+function handleDropMulti(e){
+  e.preventDefault();
+  document.getElementById("drop-zone").classList.remove("drag");
+  const files = Array.from(e.dataTransfer.files);
+  if(files.length) addFilesToQueue(files);
+}
+
+function handleMultiFileSelect(fileList){
+  const files = Array.from(fileList);
+  if(files.length) addFilesToQueue(files);
+}
+
+function addFilesToQueue(files){
+  files.forEach(f => {
+    if(fileQueue.find(q=>q.name===f.name)) return; // evitar duplicados
+    // Detect type by extension if browser doesn't set it correctly
+    let ftype = f.type;
+    if(!ftype || ftype===""){
+      const ext = f.name.split(".").pop().toLowerCase();
+      if(ext==="pdf") ftype="application/pdf";
+      else if(ext==="png") ftype="image/png";
+      else if(ext==="jpg"||ext==="jpeg") ftype="image/jpeg";
+      else ftype="text/plain";
+    }
+    const entry = {file:f, b64:null, type:ftype, text:"", status:"pending", name:f.name};
+    fileQueue.push(entry);
+    const reader = new FileReader();
+    if(ftype.startsWith("image/")||ftype==="application/pdf"){
+      reader.onload = ()=>{
+        try{
+          entry.b64=reader.result.split(",")[1];
+          entry.status="pending";
+        }catch(e){ entry.status="error"; entry.errMsg=e.message; }
+        renderQueue();
+      };
+      reader.onerror = (e)=>{ entry.status="error"; entry.errMsg="Erro ao ler ficheiro"; renderQueue(); };
+      reader.readAsDataURL(f);
+    } else {
+      reader.onload = ()=>{ entry.text=reader.result; entry.status="pending"; renderQueue(); };
+      reader.onerror = ()=>{ entry.status="error"; entry.errMsg="Erro ao ler texto"; renderQueue(); };
+      reader.readAsText(f, "UTF-8");
+    }
+  });
+  renderQueue();
+  document.getElementById("dz-icon").textContent="📂";
+  document.getElementById("dz-title").textContent=`${fileQueue.length} ficheiro${fileQueue.length!==1?"s":""} seleccionado${fileQueue.length!==1?"s":""}`;
+  document.getElementById("dz-sub").textContent="Arraste mais para adicionar ou clique em Extrair";
+  document.getElementById("dz-badges").style.display="none";
+  document.getElementById("file-actions").style.display="flex";
+  document.getElementById("file-queue").style.display="block";
+}
+
+function renderQueue(){
+  const el = document.getElementById("file-queue");
+  if(!fileQueue.length){ el.style.display="none"; return; }
+  const icons = {pending:"⏳", processing:"🔄", done:"✅", error:"❌", saved:"💾"};
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:10px;border:1.5px solid #dbe8f4;overflow:hidden">
+      <div style="padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e8edf3;font-weight:600;font-size:12px;color:#475569">
+        Fila de processamento — ${fileQueue.length} ficheiro${fileQueue.length!==1?"s":""}
+      </div>
+      ${fileQueue.map((f,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:13px">
+          <span style="font-size:16px">${icons[f.status]||"⏳"}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+          <span style="font-size:11px;color:#94a3b8">${(f.file.size/1024).toFixed(1)} KB</span>
+          <span class="badge" style="background:${f.status==="done"||f.status==="saved"?"#dcfce7":f.status==="error"?"#fee2e2":f.status==="processing"?"#dbeafe":"#f1f5f9"};color:${f.status==="done"||f.status==="saved"?"#166534":f.status==="error"?"#dc2626":f.status==="processing"?"#1d4ed8":"#475569"}">
+            ${f.status==="pending"?"Aguarda":f.status==="processing"?"A extrair…":f.status==="done"?"Extraído":f.status==="saved"?"Guardado":`Erro${f.errMsg?" — "+f.errMsg:""}`}
+          </span>
+          ${f.status==="pending"?`<button onclick="removeFromQueue(${i})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;line-height:1">×</button>`:""}
+        </div>`).join("")}
+    </div>`;
+}
+
+function removeFromQueue(i){
+  fileQueue.splice(i,1);
+  if(!fileQueue.length){ clearAllFiles(); return; }
+  document.getElementById("dz-title").textContent=`${fileQueue.length} ficheiro${fileQueue.length!==1?"s":""} seleccionado${fileQueue.length!==1?"s":""}`;
+  renderQueue();
+}
+
+function clearAllFiles(){
+  fileQueue=[];
+  document.getElementById("dz-icon").textContent="📁";
+  document.getElementById("dz-title").textContent="Arraste um ou vários relatórios aqui";
+  document.getElementById("dz-sub").textContent="ou clique para seleccionar (múltiplos ficheiros permitidos)";
+  document.getElementById("dz-badges").style.display="flex";
+  document.getElementById("file-actions").style.display="none";
+  document.getElementById("file-queue").style.display="none";
+  document.getElementById("extract-status").innerHTML="";
+  document.getElementById("file-input").value="";
+}
+
+// Legacy single-file compat
+function clearFile(){ clearAllFiles(); }
+
+// ── AI Extraction ─────────────────────────────────────────────
+const SYSTEM_PROMPT=`És um assistente clínico especializado em análise de relatórios médicos portugueses para a RNCCI.
+Extrai informação clínica e devolve APENAS JSON válido com estes campos (string vazia "" se não disponível):
+{"processo":"","nome":"","dataNasc":"","utente":"","servico":"","cama":"","dataInternamento":"","medico":"","diagnosticoPrincipal":"","comorbilidades":"","barthelAdmissao":"","glasgowAdmissao":"","bradenAdmissao":"","mifAdmissao":"","morseAdmissao":"","orientacao":"","comunicacao":"","planoTerapeutico":"","intercorrencias":"","dataFisiatria":"","diagnosticoFuncional":"","objectivosReabilitacao":"","avaliacaoFisiatria":"","planoFisiatria":"","fisioterapia":"","terapiaOcupacional":"","terapiaFala":"","psicologia":"","servicoSocial":"","nutricao":"","barthelAlta":"","mifAlta":"","bradenAlta":"","morseAlta":"","marchaTransferencias":"","tipologia":"","justificacao":"","necesidadesTecnicas":"","destinoAlta":"","unidadeDestino":"","dataPrevistAlta":"","dataEfectivaAlta":"","estadoActual":"","notasClinias":""}
+Regras: apenas JSON; valores em português; escalas só o número.`;
+
+async function extractAllFiles(){
+  if(!state.apiKey){
+    showNotif("Configure a Chave API em ⚙️ Configurações","err");
+    document.getElementById("ai-key-warning").style.display="block";
+    return;
+  }
+  if(!fileQueue.length){showNotif("Seleccione pelo menos um ficheiro","err");return;}
+
+  // Find next pending file
+  const idx = fileQueue.findIndex(f=>f.status==="pending"||f.status==="error");
+  if(idx===-1){showNotif("Todos os ficheiros já foram processados","err");return;}
+
+  const fq = fileQueue[idx];
+  fq.status="processing";
+  renderQueue();
+
+  document.getElementById("extract-btn").disabled=true;
+  document.getElementById("extract-btn").textContent="A extrair…";
+
+  const statusEl=document.getElementById("extract-status");
+  statusEl.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px;border:1.5px solid #dbe8f4;text-align:center">
+    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
+      <div class="spin" style="width:22px;height:22px"></div>
+      <span style="font-weight:600;color:#1e4d7a;font-size:15px">A analisar: ${fq.name}</span>
+    </div>
+    <div style="color:#64748b;font-size:13px;margin-bottom:12px">O Claude está a extrair e estruturar a informação</div>
+    <div class="pbar"><div class="pfill pulse" style="width:65%"></div></div>
+  </div>`;
+
+  try{
+    const result = await extractSingleFile(fq);
+    fq.status="done";
+    renderQueue();
+
+    // Load into form for review
+    state.editData = {...EMPTY, ...result};
+    state.confidence = Object.fromEntries(FIELDS.map(f=>[f.key, result[f.key]?"high":"empty"]));
+    updateFormFields();
+
+    const filled = FIELDS.filter(f=>state.editData[f.key]).length;
+    const pct = Math.round((filled/FIELDS.length)*100);
+    const remaining = fileQueue.filter(f=>f.status==="pending").length;
+
+    statusEl.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:#15803d;margin-bottom:5px">✅ Extracção concluída — ${fq.name}</div>
+      <div style="color:#166534;font-size:13px"><b>${filled}</b>/${FIELDS.length} campos preenchidos (${pct}%). Reveja no <b>Formulário Clínico</b> e guarde.</div>
+      ${remaining>0?`<div style="color:#0369a1;font-size:12px;margin-top:6px">📋 Ainda ${remaining} ficheiro${remaining!==1?"s":""} na fila — após guardar, volte aqui para continuar.</div>`:""}
+    </div>`;
+
+    document.getElementById("extract-btn").disabled=false;
+    document.getElementById("extract-btn").textContent=remaining>0?"✨ Extrair próximo":"✨ Extrair todos com IA";
+
+    setTimeout(()=>{
+      showTab("form", document.querySelectorAll(".tab-btn")[1]);
+    }, 800);
+
+  } catch(e){
+    fq.status="error";
+    fq.errMsg=e.message||"Erro desconhecido";
+    renderQueue();
+    statusEl.innerHTML=`<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:14px">
+      <div style="font-weight:700;color:#dc2626;margin-bottom:6px">❌ Erro ao processar: ${fq.name}</div>
+      <div style="font-size:13px;color:#7f1d1d;font-family:monospace;background:#fff;padding:8px;border-radius:6px;word-break:break-all">${e.message}</div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:8px">Verifique a Chave API em ⚙️ Configurações ou se o ficheiro está corrompido.</div>
+    </div>`;
+    document.getElementById("extract-btn").disabled=false;
+    document.getElementById("extract-btn").textContent="✨ Extrair todos com IA";
+  }
+}
+
+
+async function extractSingleFile(fq){
+  // Wait for FileReader to finish if needed
+  if((fq.type==="application/pdf"||fq.type.startsWith("image/"))&&!fq.b64){
+    await new Promise((resolve,reject)=>{
+      let tries=0;
+      const t=setInterval(()=>{
+        tries++;
+        if(fq.b64){clearInterval(t);resolve();}
+        if(tries>50){clearInterval(t);reject(new Error("Timeout a ler ficheiro"));}
+      },200);
+    });
+  }
+
+  let messages;
+  if(fq.type==="application/pdf"){
+    messages=[{role:"user",content:[
+      {type:"document",source:{type:"base64",media_type:"application/pdf",data:fq.b64}},
+      {type:"text",text:"Analisa este relatório clínico. Devolve apenas o JSON."}
+    ]}];
+  } else if(fq.type&&fq.type.startsWith("image/")){
+    messages=[{role:"user",content:[
+      {type:"image",source:{type:"base64",media_type:fq.type,data:fq.b64}},
+      {type:"text",text:"Analisa este relatório clínico. Devolve apenas o JSON."}
+    ]}];
+  } else {
+    const txt = fq.text||"";
+    if(!txt.trim()) throw new Error("Ficheiro vazio ou ilegível");
+    messages=[{role:"user",content:`Analisa este relatório clínico:\n\n${txt}`}];
+  }
+
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":state.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:SYSTEM_PROMPT,messages})
+  });
+  if(!res.ok){
+    let errData; try{errData=await res.json();}catch{errData={};}
+    const errMsg = errData?.error?.message || `HTTP ${res.status} ${res.statusText}`;
+    throw new Error(`API: ${errMsg}`);
+  }
+  const json=await res.json();
+  const raw=json.content?.[0]?.text||"";
+  if(!raw) throw new Error("API devolveu resposta vazia");
+  let parsed;
+  try{ parsed=JSON.parse(raw.replace(/```json|```/g,"").trim()); }
+  catch(e){ throw new Error(`JSON inválido na resposta: ${raw.substring(0,100)}`); }
+  return parsed;
+}
+
+
+async function saveRecord(){
+  const btn=document.getElementById("save-btn");
+  btn.disabled=true;
+  btn.innerHTML=`<div class="spin" style="width:13px;height:13px;border-top-color:#fff"></div> A guardar…`;
+
+  const now=new Date().toLocaleString("pt-PT");
+  const existing=state.records.find(r=>r.processo&&r.processo===state.editData.processo);
+  const rec={
+    ...state.editData,
+    _id:existing?._id||state.editData.processo||"rncci_"+Date.now(),
+    _savedAt:now,
+    _savedBy:state.user||"Anónimo",
+    _history:[...(existing?._history||[]),{at:now,by:state.user}].slice(-10)
+  };
+
+  if(existing){state.records=state.records.map(r=>r._id===rec._id?rec:r);}
+  else{state.records=[...state.records,rec];}
+
+  const ok=await saveRecords();
+  btn.disabled=false;
+  btn.innerHTML="💾 Guardar e Partilhar";
+
+  if(ok){showNotif("✅ Registo guardado e partilhado com a equipa!","ok");}
+  else{showNotif("⚠️ Guardado localmente (sem ligação ao JSONBin)","err");}
+
+  showTab("database",document.querySelectorAll(".tab-btn")[2]);
+  renderDB();
+}
+
+// ── Render DB ─────────────────────────────────────────────────
+function renderDB(){
+  const recs=state.records;
+  document.getElementById("db-count").textContent=`${recs.length} doente${recs.length!==1?"s":""}`;
+  document.getElementById("db-loading").style.display="none";
+
+  if(recs.length===0){
+    document.getElementById("db-empty").style.display="block";
+    document.getElementById("db-table-wrap").style.display="none";
+    document.getElementById("kpi-grid").style.display="none";
+    return;
+  }
+
+  document.getElementById("db-empty").style.display="none";
+  document.getElementById("db-table-wrap").style.display="block";
+  document.getElementById("kpi-grid").style.display="grid";
+  document.getElementById("export-btn").disabled=false;
+
+  const tbody=document.getElementById("db-tbody");
+  tbody.innerHTML=recs.map((r,i)=>{
+    const bs=badgeStyle(r.estadoActual);
+    return `<tr class="${i%2===0?"":"even"}">
+      <td style="font-weight:700;color:#1e4d7a;font-family:'IBM Plex Mono',monospace;white-space:nowrap">${r.processo||"—"}</td>
+      <td style="font-weight:600;white-space:nowrap">${r.nome||"—"}</td>
+      <td style="color:#475569;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.diagnosticoPrincipal||"—"}</td>
+      <td style="text-align:center">${r.barthelAdmissao||"—"}</td>
+      <td style="text-align:center">${r.barthelAlta||"—"}</td>
+      <td>${r.tipologia?`<span class="badge" style="background:#dbeafe;color:#1d4ed8">${r.tipologia}</span>`:"—"}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.destinoAlta||"—"}</td>
+      <td><span class="badge" style="background:${bs.bg};color:${bs.text}">${r.estadoActual||"—"}</span></td>
+      <td><span class="badge" style="background:#f5f3ff;color:#6d28d9">${r._savedBy||"—"}</span></td>
+      <td style="color:#94a3b8;font-size:11px;white-space:nowrap">${r._savedAt||"—"}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn btn-s" style="padding:5px 10px;font-size:12px" onclick="editRecord('${r._id}')">✏️</button>
+          <button class="btn btn-r" style="padding:5px 10px;font-size:12px" onclick="confirmDelete('${r._id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+
+  renderKPIs(recs);
+}
+
+function editRecord(id){
+  const rec=state.records.find(r=>r._id===id);
+  if(!rec) return;
+  state.editData={...EMPTY,...rec};
+  state.confidence={};
+  updateFormFields();
+  showTab("form",document.querySelectorAll(".tab-btn")[1]);
+}
+
+function confirmDelete(id){
+  const rec=state.records.find(r=>r._id===id);
+  if(!rec) return;
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🗑️</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Eliminar registo?</div>
+    <div style="color:#64748b;font-size:14px">Vai eliminar <b>${rec.nome||rec._id}</b> da base partilhada. Todos os utilizadores perderão acesso.</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn" style="background:#dc2626;color:#fff" onclick="deleteRecord('${id}')">Eliminar para todos</button>`;
+  document.getElementById("modal").style.display="flex";
+}
+
+async function deleteRecord(id){
+  closeModal();
+  state.records=state.records.filter(r=>r._id!==id);
+  await saveRecords();
+  renderDB();
+  showNotif("Registo eliminado","ok");
+}
+
+function closeModal(){document.getElementById("modal").style.display="none";}
+
+function renderKPIs(recs){
+  const kpis=[
+    {label:"Total Doentes",value:recs.length,icon:"👥",color:"#1e4d7a"},
+    {label:"Aguardam RNCCI",value:recs.filter(r=>r.estadoActual?.includes("aguarda RNCCI")).length,icon:"⏳",color:"#d97706"},
+    {label:"Alta c/ Vaga",value:recs.filter(r=>r.estadoActual?.includes("vaga")).length,icon:"✅",color:"#059669"},
+    {label:"Transferidos",value:recs.filter(r=>r.estadoActual?.includes("Transferido")).length,icon:"🚗",color:"#7c3aed"},
+    {label:"Colaboradores",value:new Set(recs.map(r=>r._savedBy).filter(Boolean)).size,icon:"👤",color:"#0369a1"},
+  ];
+  document.getElementById("kpi-grid").innerHTML=kpis.map(s=>`
+    <div class="kpi-card">
+      <div style="width:40px;height:40px;border-radius:9px;background:${s.color}18;display:flex;align-items:center;justify-content:center;font-size:19px">${s.icon}</div>
+      <div><div style="font-size:22px;font-weight:800;color:${s.color}">${s.value}</div><div style="font-size:11px;color:#64748b">${s.label}</div></div>
+    </div>`).join("");
+}
+
+// ── Export PDF (landscape) ───────────────────────────────────
+function exportPDF(){
+  if(!state.records.length){ showNotif("Sem registos para exportar","err"); return; }
+
+  const now = new Date().toLocaleString("pt-PT");
+  const cols = [
+    {key:"processo",             label:"Nº Processo"},
+    {key:"nome",                 label:"Nome"},
+    {key:"dataNasc",             label:"Nasc."},
+    {key:"servico",              label:"Serviço"},
+    {key:"dataInternamento",     label:"Internamento"},
+    {key:"diagnosticoPrincipal", label:"Diagnóstico Principal"},
+    {key:"barthelAdmissao",      label:"Barthel Adm."},
+    {key:"barthelAlta",          label:"Barthel Alta"},
+    {key:"mifAdmissao",          label:"MIF Adm."},
+    {key:"mifAlta",              label:"MIF Alta"},
+    {key:"morseAdmissao",        label:"Morse Adm."},
+    {key:"morseAlta",            label:"Morse Alta"},
+    {key:"avaliacaoFisiatria",   label:"Aval. Fisiatria"},
+    {key:"planoFisiatria",       label:"Plano Fisiatria"},
+    {key:"tipologia",            label:"Tipologia RNCCI"},
+    {key:"destinoAlta",          label:"Destino Alta"},
+    {key:"estadoActual",         label:"Estado"},
+    {key:"_savedBy",             label:"Registado por"},
+    {key:"_savedAt",             label:"Data Registo"},
+  ];
+
+  const rows = state.records.map(r =>
+    cols.map(c => {
+      const val = (r[c.key]||"—");
+      const isLong = val.length > 40;
+      return `<td style="padding:5px 8px;border:1px solid #ddd;font-size:9px;${isLong?"max-width:180px;word-wrap:break-word;white-space:normal":"white-space:nowrap"}">${val}</td>`;
+    }).join("")
+  );
+
+  const html = `<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>RNCCI — Base de Dados ULSSA</title>
+<style>
+  @page { size: A4 landscape; margin: 10mm; }
+  body { font-family: Arial, sans-serif; font-size: 10px; color: #1a2332; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border-bottom: 2px solid #1e4d7a; padding-bottom: 8px; }
+  h1 { font-size: 13px; color: #1e4d7a; margin: 0; }
+  .sub { font-size: 9px; color: #64748b; margin-top: 2px; }
+  .meta { font-size: 9px; color: #64748b; text-align: right; }
+  table { width: 100%; border-collapse: collapse; table-layout: auto; }
+  th { background: #1e4d7a; color: #fff; padding: 5px 7px; font-size: 9px; text-align: left; white-space: nowrap; border: 1px solid #1e4d7a; }
+  td { border: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f0f4f8; }
+  tr:hover td { background: #e0ecf8; }
+  .footer { margin-top: 8px; font-size: 8px; color: #94a3b8; text-align: right; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>🏥 Protocolo Público ULSSA | TS HEFP — Gestão Dados Clínicos</h1>
+      <div class="sub">Base de Dados RNCCI · ${state.records.length} doente${state.records.length!==1?"s":""} registado${state.records.length!==1?"s":""}</div>
+    </div>
+    <div class="meta">Exportado em ${now}<br>Formato: A4 Horizontal</div>
+  </div>
+  <table>
+    <thead><tr>${cols.map(c=>`<th>${c.label}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r}</tr>`).join("")}</tbody>
+  </table>
+  <div class="footer">Documento gerado automaticamente · Protocolo Público ULSSA | TS HEFP · Confidencial</div>
+  <script>window.onload=()=>{ setTimeout(()=>window.print(), 400); }<\/script>
+</body>
+</html>`;
+
+  const win = window.open("","_blank");
+  if(!win){ showNotif("Active os popups no browser para exportar PDF","err"); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+// ── Export CSV ────────────────────────────────────────────────
+function exportCSV(){
+  if(!state.records.length) return;
+  const headers=[...FIELDS.map(f=>f.label),"Guardado por","Quando"].join(";");
+  const rows=state.records.map(r=>[...FIELDS.map(f=>`"${(r[f.key]||"").replace(/"/g,'""')}"`),`"${r._savedBy||""}"`,`"${r._savedAt||""}"`].join(";"));
+  const blob=new Blob(["\uFEFF"+[headers,...rows].join("\n")],{type:"text/csv;charset=utf-8;"});
+  Object.assign(document.createElement("a"),{href:URL.createObjectURL(blob),download:"RNCCI_ULSSA_Dados.csv"}).click();
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function saveApiKey(){
+  const k=document.getElementById("api-key-input").value.trim();
+  if(!k){showNotif("Introduza a chave API","err");return;}
+  state.apiKey=k;
+  lsSet("rncci_apikey",k);
+  updateSettingsUI();
+  document.getElementById("ai-key-warning").style.display="none";
+  showNotif("Chave API guardada","ok");
+}
+
+function saveJsonBinSettings(){
+  const id=document.getElementById("jsonbin-id").value.trim();
+  const key=document.getElementById("jsonbin-key").value.trim();
+  if(!id||!key){showNotif("Preencha o BIN ID e a Master Key","err");return;}
+  state.jsonBinId=id; state.jsonBinKey=key;
+  lsSet("rncci_jbid",id); lsSet("rncci_jbkey",key);
+  showNotif("Configurações JSONBin guardadas","ok");
+  syncNow();
+}
+
+async function testJsonBin(){
+  const el=document.getElementById("jsonbin-test-result");
+  el.innerHTML=`<span style="color:#64748b">A testar ligação…</span>`;
+  const id=document.getElementById("jsonbin-id").value.trim();
+  const key=document.getElementById("jsonbin-key").value.trim();
+  if(!id||!key){el.innerHTML=`<span style="color:#dc2626">Preencha o BIN ID e a Master Key primeiro.</span>`;return;}
+  try{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`,{headers:{"X-Master-Key":key,"X-Bin-Meta":false}});
+    if(r.ok){el.innerHTML=`<span style="color:#059669;font-weight:600">✅ Ligação bem sucedida! Base de dados partilhada disponível.</span>`;}
+    else{el.innerHTML=`<span style="color:#dc2626">❌ Erro ${r.status}: verifique o BIN ID e a Master Key.</span>`;}
+  }catch{el.innerHTML=`<span style="color:#dc2626">❌ Sem ligação à internet ou erro de rede.</span>`;}
+}
+
+function clearLocalData(){
+  if(confirm("Limpar todos os dados locais? (Configurações e registo de utilizador)")){
+    ["rncci_user","rncci_apikey","rncci_jbid","rncci_jbkey"].forEach(k=>localStorage.removeItem(k));
+    showNotif("Dados locais limpos","ok");
+    updateSettingsUI();
+  }
+}
+
+function updateSettingsUI(){
+  const apiOk=!!state.apiKey;
+  document.getElementById("api-key-status").textContent=apiOk?"Configurada ✅":"Não configurada";
+  document.getElementById("api-key-status").style.color=apiOk?"#059669":"#dc2626";
+  document.getElementById("ai-key-badge").innerHTML=`<span class="badge" style="background:${apiOk?"#dcfce7":"#fee2e2"};color:${apiOk?"#166534":"#dc2626"}">${apiOk?"✅ Activa":"❌ Não configurada"}</span>`;
+  if(state.apiKey) document.getElementById("api-key-input").placeholder="••••••••••••••••";
+  if(state.jsonBinId) document.getElementById("jsonbin-id").value=state.jsonBinId;
+}
+
+function renderAIInfo(){
+  const hasKey=!!state.apiKey;
+  document.getElementById("ai-status-info").innerHTML=[
+    ["1","Upload","Arraste o relatório (PDF, imagem ou texto)"],
+    ["2","Extracção IA",hasKey?"Claude preenche os 40 campos automaticamente":"Configure a chave API para activar a IA"],
+    ["3","Revisão","Verifique e complete campos em falta"],
+    ["4","Partilhar","Registo fica disponível para toda a equipa"]
+  ].map(([n,t,d])=>`
+    <div style="display:flex;gap:11px;margin-bottom:12px">
+      <div style="width:24px;height:24px;min-width:24px;border-radius:50%;background:#1e4d7a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">${n}</div>
+      <div><div style="font-weight:600;font-size:12px">${t}</div><div style="font-size:11px;color:#64748b;margin-top:1px">${d}</div></div>
+    </div>`).join("");
+}
+
+// ── Import JSON paste ────────────────────────────────────────
+function importFromJSON(){
+  const raw = document.getElementById("json-paste-area").value.trim();
+  const resultEl = document.getElementById("json-import-result");
+  if(!raw){ showNotif("Cole o JSON primeiro","err"); return; }
+
+  let parsed;
+  try{
+    // Accept raw JSON or wrapped in ```json ... ```
+    const clean = raw.replace(/^```json\s*/i,"").replace(/```\s*$/,"").trim();
+    parsed = JSON.parse(clean);
+  } catch(e){
+    resultEl.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:12px;color:#dc2626;font-size:13px">
+      ❌ JSON inválido. Certifique-se que copiou a resposta completa do Claude.ai.<br>
+      <span style="font-size:11px;opacity:.8">Erro: ${e.message}</span>
+    </div>`;
+    return;
+  }
+
+  // Merge into editData
+  state.editData = {...EMPTY};
+  FIELDS.forEach(f => {
+    if(parsed[f.key] !== undefined && parsed[f.key] !== null)
+      state.editData[f.key] = String(parsed[f.key]);
+  });
+  state.confidence = Object.fromEntries(FIELDS.map(f=>[f.key, state.editData[f.key]?"high":"empty"]));
+
+  const filled = FIELDS.filter(f=>state.editData[f.key]).length;
+  const pct = Math.round((filled/FIELDS.length)*100);
+
+  resultEl.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:12px;color:#166534;font-size:13px">
+    ✅ <b>${filled}</b>/${FIELDS.length} campos importados (${pct}%). A abrir formulário…
+  </div>`;
+
+  updateFormFields();
+  setTimeout(()=>{
+    showTab("form", document.querySelectorAll(".tab-btn")[1]);
+    document.getElementById("json-paste-area").value="";
+    resultEl.innerHTML="";
+  }, 1200);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function badgeStyle(estado){
+  if(!estado) return{bg:"#f1f5f9",text:"#475569"};
+  if(estado.includes("aguarda RNCCI")) return{bg:"#fef9c3",text:"#854d0e"};
+  if(estado.includes("vaga"))          return{bg:"#ffedd5",text:"#9a3412"};
+  if(estado.includes("Transferido"))   return{bg:"#dcfce7",text:"#166534"};
+  if(estado.includes("Óbito"))         return{bg:"#fee2e2",text:"#dc2626"};
+  return{bg:"#e0f2fe",text:"#0369a1"};
+}
+
+let notifTimer;
+function showNotif(msg,type){
+  const old=document.querySelector(".notif");
+  if(old) old.remove();
+  clearTimeout(notifTimer);
+  const el=document.createElement("div");
+  el.className=`notif notif-${type}`;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  notifTimer=setTimeout(()=>el.remove(),3500);
+}
+
+// ── Auto-login ────────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded",()=>{
+  const saved=lsGet("rncci_user");
+  if(saved){
+    state.user=saved;
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("app").style.display="block";
+    initApp();
+  }
+});
+</script>
+</body>
+</html>
