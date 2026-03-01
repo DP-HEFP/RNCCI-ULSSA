@@ -142,7 +142,7 @@ tr:hover td{background:#f0f7ff}
         <button class="tab-btn active" onclick="showTab('upload',this)">📤 Upload & Extracção</button>
         <button class="tab-btn" onclick="showTab('form',this)">📋 Formulário Clínico</button>
         <button class="tab-btn" id="tab-db-btn" onclick="showTab('database',this)">🗄️ Base Partilhada</button>
-        <button class="tab-btn" onclick="showTab('settings',this)">⚙️ Configurações</button>
+        <button class="tab-btn" onclick="askSettingsPassword(this)">⚙️ Configurações</button>
       </div>
     </div>
   </div>
@@ -157,23 +157,54 @@ tr:hover td{background:#f0f7ff}
           <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
             ondragover="event.preventDefault();this.classList.add('drag')"
             ondragleave="this.classList.remove('drag')"
-            ondrop="handleDrop(event)">
-            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt" style="display:none" onchange="handleFileSelect(this.files[0])">
+            ondrop="handleDropMulti(event)">
+            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg,.txt" multiple style="display:none" onchange="handleMultiFileSelect(this.files)">
             <div id="dz-icon" style="font-size:46px;margin-bottom:14px">📁</div>
-            <div id="dz-title" style="font-weight:700;font-size:17px;margin-bottom:8px">Arraste o relatório clínico aqui</div>
-            <div id="dz-sub" style="color:#64748b;font-size:14px">ou clique para seleccionar</div>
+            <div id="dz-title" style="font-weight:700;font-size:17px;margin-bottom:8px">Arraste um ou vários relatórios aqui</div>
+            <div id="dz-sub" style="color:#64748b;font-size:14px">ou clique para seleccionar (múltiplos ficheiros permitidos)</div>
             <div style="margin-top:14px;display:flex;gap:8px;justify-content:center" id="dz-badges">
               <span class="badge" style="background:#e8edf3;color:#475569">PDF</span>
               <span class="badge" style="background:#e8edf3;color:#475569">PNG</span>
               <span class="badge" style="background:#e8edf3;color:#475569">JPG</span>
               <span class="badge" style="background:#e8edf3;color:#475569">TXT</span>
+              <span class="badge" style="background:#dbeafe;color:#1d4ed8">Múltiplos</span>
             </div>
           </div>
-          <div id="file-actions" style="display:none;margin-top:14px;gap:12px;display:none">
-            <button class="btn btn-p" style="flex:1;justify-content:center;font-size:15px" onclick="extractWithAI()" id="extract-btn">✨ Extrair com IA</button>
-            <button class="btn btn-s" onclick="clearFile()">Limpar</button>
+          <!-- File queue -->
+          <div id="file-queue" style="display:none;margin-top:14px"></div>
+          <div id="file-actions" style="display:none;margin-top:14px;gap:12px">
+            <button class="btn btn-p" style="flex:1;justify-content:center;font-size:15px" onclick="extractAllFiles()" id="extract-btn">✨ Extrair todos com IA</button>
+            <button class="btn btn-s" onclick="clearAllFiles()">Limpar</button>
           </div>
           <div id="extract-status" style="margin-top:14px"></div>
+
+          <!-- JSON PASTE MODE -->
+          <div style="margin-top:20px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <div style="flex:1;height:1px;background:#e2e8f0"></div>
+              <span style="font-size:12px;color:#94a3b8;font-weight:600;white-space:nowrap">OU SEM CHAVE API</span>
+              <div style="flex:1;height:1px;background:#e2e8f0"></div>
+            </div>
+            <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:18px 20px">
+              <div style="font-weight:700;font-size:14px;color:#92400e;margin-bottom:6px">📋 Colar JSON do Claude.ai</div>
+              <div style="font-size:12px;color:#78350f;margin-bottom:14px;line-height:1.6">
+                Sem chave API? Use o <b>Claude.ai gratuito</b>:<br>
+                1. Abra <a href="https://claude.ai" target="_blank" style="color:#1e4d7a;font-weight:600">claude.ai</a> e cole o texto do relatório<br>
+                2. Peça: <i style="background:#fef3c7;padding:2px 6px;border-radius:4px">"Extrai os dados clínicos em JSON para RNCCI"</i><br>
+                3. Copie a resposta JSON e cole aqui:
+              </div>
+              <textarea id="json-paste-area" class="fi" rows="5"
+                placeholder='Cole aqui o JSON devolvido pelo Claude.ai...&#10;&#10;Exemplo: {"nome":"Maria Silva","diagnosticoPrincipal":"AVC","barthelAdmissao":"25",...}'
+                style="font-family:monospace;font-size:12px;background:#fff"></textarea>
+              <div style="display:flex;gap:10px;margin-top:10px">
+                <button class="btn btn-p" style="flex:1;justify-content:center" onclick="importFromJSON()">
+                  📥 Importar para Formulário
+                </button>
+                <button class="btn btn-s" style="font-size:12px" onclick="document.getElementById('json-paste-area').value=''">Limpar</button>
+              </div>
+              <div id="json-import-result" style="margin-top:10px"></div>
+            </div>
+          </div>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:14px">
@@ -520,6 +551,39 @@ async function syncNow(){
 }
 
 // ── Tabs ─────────────────────────────────────────────────────
+let settingsUnlocked = false;
+
+function askSettingsPassword(btn){
+  if(settingsUnlocked){ showTab("settings",btn); return; }
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Configurações protegidas</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:16px">Introduza a palavra-passe para aceder às configurações.</div>
+    <input type="password" id="settings-pw-input" class="fi" placeholder="Palavra-passe…" style="margin-bottom:4px"
+      onkeydown="if(event.key==='Enter')checkSettingsPassword()">
+    <div id="settings-pw-error" style="color:#dc2626;font-size:12px;margin-top:6px;display:none">❌ Palavra-passe incorrecta</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-p" onclick="checkSettingsPassword()">🔓 Entrar</button>`;
+  document.getElementById("modal").style.display="flex";
+  setTimeout(()=>document.getElementById("settings-pw-input").focus(),100);
+  // store btn ref
+  window._settingsBtn = btn;
+}
+
+function checkSettingsPassword(){
+  const val = document.getElementById("settings-pw-input").value;
+  if(val === "Dinisclara1"){
+    settingsUnlocked = true;
+    closeModal();
+    showTab("settings", window._settingsBtn);
+  } else {
+    document.getElementById("settings-pw-error").style.display="block";
+    document.getElementById("settings-pw-input").value="";
+    document.getElementById("settings-pw-input").focus();
+  }
+}
+
 function showTab(name,btn){
   ["upload","form","database","settings"].forEach(t=>{
     document.getElementById("tab-"+t).style.display=t===name?"block":"none";
@@ -529,43 +593,87 @@ function showTab(name,btn){
   if(name==="database") syncNow();
 }
 
-// ── File handling ────────────────────────────────────────────
-function handleDrop(e){
+// ── File handling (multi-file) ───────────────────────────────
+let fileQueue = []; // [{file, b64, type, text, status:'pending'|'done'|'error', name}]
+
+function handleDropMulti(e){
   e.preventDefault();
   document.getElementById("drop-zone").classList.remove("drag");
-  const f=e.dataTransfer.files[0];
-  if(f) handleFileSelect(f);
+  const files = Array.from(e.dataTransfer.files);
+  if(files.length) addFilesToQueue(files);
 }
 
-function handleFileSelect(f){
-  if(!f) return;
-  state.file=f;
-  document.getElementById("dz-icon").textContent="✅";
-  document.getElementById("dz-title").textContent=f.name;
-  document.getElementById("dz-sub").textContent=`${(f.size/1024).toFixed(1)} KB`;
+function handleMultiFileSelect(fileList){
+  const files = Array.from(fileList);
+  if(files.length) addFilesToQueue(files);
+}
+
+function addFilesToQueue(files){
+  files.forEach(f => {
+    if(fileQueue.find(q=>q.name===f.name)) return; // evitar duplicados
+    fileQueue.push({file:f, b64:null, type:f.type, text:"", status:"pending", name:f.name});
+    const reader = new FileReader();
+    const idx = fileQueue.length-1;
+    if(f.type.startsWith("image/")||f.type==="application/pdf"){
+      reader.onload = ()=>{ fileQueue[idx].b64=reader.result.split(",")[1]; renderQueue(); };
+      reader.readAsDataURL(f);
+    } else {
+      reader.onload = ()=>{ fileQueue[idx].text=reader.result; renderQueue(); };
+      reader.readAsText(f);
+    }
+  });
+  renderQueue();
+  document.getElementById("dz-icon").textContent="📂";
+  document.getElementById("dz-title").textContent=`${fileQueue.length} ficheiro${fileQueue.length!==1?"s":""} seleccionado${fileQueue.length!==1?"s":""}`;
+  document.getElementById("dz-sub").textContent="Arraste mais para adicionar ou clique em Extrair";
   document.getElementById("dz-badges").style.display="none";
   document.getElementById("file-actions").style.display="flex";
-
-  const reader=new FileReader();
-  if(f.type.startsWith("image/")||f.type==="application/pdf"){
-    reader.onload=()=>{state.fileB64=reader.result.split(",")[1];state.fileType=f.type;state.fileText="";};
-    reader.readAsDataURL(f);
-  } else {
-    reader.onload=()=>{state.fileB64=null;state.fileType=f.type;state.fileText=reader.result;};
-    reader.readAsText(f);
-  }
+  document.getElementById("file-queue").style.display="block";
 }
 
-function clearFile(){
-  state.file=null;state.fileB64=null;state.fileType=null;state.fileText="";
+function renderQueue(){
+  const el = document.getElementById("file-queue");
+  if(!fileQueue.length){ el.style.display="none"; return; }
+  const icons = {pending:"⏳", processing:"🔄", done:"✅", error:"❌", saved:"💾"};
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:10px;border:1.5px solid #dbe8f4;overflow:hidden">
+      <div style="padding:10px 16px;background:#f8fafc;border-bottom:1px solid #e8edf3;font-weight:600;font-size:12px;color:#475569">
+        Fila de processamento — ${fileQueue.length} ficheiro${fileQueue.length!==1?"s":""}
+      </div>
+      ${fileQueue.map((f,i)=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:13px">
+          <span style="font-size:16px">${icons[f.status]||"⏳"}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
+          <span style="font-size:11px;color:#94a3b8">${(f.file.size/1024).toFixed(1)} KB</span>
+          <span class="badge" style="background:${f.status==="done"||f.status==="saved"?"#dcfce7":f.status==="error"?"#fee2e2":f.status==="processing"?"#dbeafe":"#f1f5f9"};color:${f.status==="done"||f.status==="saved"?"#166534":f.status==="error"?"#dc2626":f.status==="processing"?"#1d4ed8":"#475569"}">
+            ${f.status==="pending"?"Aguarda":f.status==="processing"?"A extrair…":f.status==="done"?"Extraído":f.status==="saved"?"Guardado":"Erro"}
+          </span>
+          ${f.status==="pending"?`<button onclick="removeFromQueue(${i})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;line-height:1">×</button>`:""}
+        </div>`).join("")}
+    </div>`;
+}
+
+function removeFromQueue(i){
+  fileQueue.splice(i,1);
+  if(!fileQueue.length){ clearAllFiles(); return; }
+  document.getElementById("dz-title").textContent=`${fileQueue.length} ficheiro${fileQueue.length!==1?"s":""} seleccionado${fileQueue.length!==1?"s":""}`;
+  renderQueue();
+}
+
+function clearAllFiles(){
+  fileQueue=[];
   document.getElementById("dz-icon").textContent="📁";
-  document.getElementById("dz-title").textContent="Arraste o relatório clínico aqui";
-  document.getElementById("dz-sub").textContent="ou clique para seleccionar";
+  document.getElementById("dz-title").textContent="Arraste um ou vários relatórios aqui";
+  document.getElementById("dz-sub").textContent="ou clique para seleccionar (múltiplos ficheiros permitidos)";
   document.getElementById("dz-badges").style.display="flex";
   document.getElementById("file-actions").style.display="none";
+  document.getElementById("file-queue").style.display="none";
   document.getElementById("extract-status").innerHTML="";
   document.getElementById("file-input").value="";
 }
+
+// Legacy single-file compat
+function clearFile(){ clearAllFiles(); }
 
 // ── AI Extraction ─────────────────────────────────────────────
 const SYSTEM_PROMPT=`És um assistente clínico especializado em análise de relatórios médicos portugueses para a RNCCI.
@@ -573,14 +681,58 @@ Extrai informação clínica e devolve APENAS JSON válido com estes campos (str
 {"processo":"","nome":"","dataNasc":"","utente":"","servico":"","cama":"","dataInternamento":"","medico":"","diagnosticoPrincipal":"","comorbilidades":"","barthelAdmissao":"","glasgowAdmissao":"","bradenAdmissao":"","mifAdmissao":"","orientacao":"","comunicacao":"","planoTerapeutico":"","intercorrencias":"","dataFisiatria":"","diagnosticoFuncional":"","objectivosReabilitacao":"","fisioterapia":"","terapiaOcupacional":"","terapiaFala":"","psicologia":"","servicoSocial":"","nutricao":"","barthelAlta":"","mifAlta":"","bradenAlta":"","marchaTransferencias":"","tipologia":"","justificacao":"","necesidadesTecnicas":"","destinoAlta":"","unidadeDestino":"","dataPrevistAlta":"","dataEfectivaAlta":"","estadoActual":"","notasClinias":""}
 Regras: apenas JSON; valores em português; escalas só o número.`;
 
-async function extractWithAI(){
+async function extractAllFiles(){
   if(!state.apiKey){
     showNotif("Configure a Chave API em ⚙️ Configurações","err");
     document.getElementById("ai-key-warning").style.display="block";
     return;
   }
-  if(!state.file){showNotif("Seleccione um ficheiro primeiro","err");return;}
+  if(!fileQueue.length){showNotif("Seleccione pelo menos um ficheiro","err");return;}
 
+  const pending = fileQueue.filter(f=>f.status==="pending");
+  if(!pending.length){showNotif("Todos os ficheiros já foram processados","err");return;}
+
+  document.getElementById("extract-btn").disabled=true;
+  document.getElementById("extract-btn").textContent="A processar…";
+
+  let savedCount=0, errorCount=0;
+  for(let i=0;i<fileQueue.length;i++){
+    if(fileQueue[i].status!=="pending") continue;
+    fileQueue[i].status="processing";
+    renderQueue();
+    try{
+      const result = await extractSingleFile(fileQueue[i]);
+      // Auto-save to DB
+      const now=new Date().toLocaleString("pt-PT");
+      const existing=state.records.find(r=>r.processo&&r.processo===result.processo);
+      const rec={...result,_id:existing?._id||result.processo||"rncci_"+Date.now(),_savedAt:now,_savedBy:state.user||"Anónimo",_history:[...(existing?._history||[]),{at:now,by:state.user}].slice(-10)};
+      if(existing){state.records=state.records.map(r=>r._id===rec._id?rec:r);}
+      else{state.records=[...state.records,rec];}
+      fileQueue[i].status="saved";
+      savedCount++;
+    } catch(e){
+      fileQueue[i].status="error";
+      errorCount++;
+    }
+    renderQueue();
+  }
+
+  // Save all to DB at once
+  await saveRecords();
+  renderDB();
+
+  document.getElementById("extract-btn").disabled=false;
+  document.getElementById("extract-btn").textContent="✨ Extrair todos com IA";
+
+  const statusEl=document.getElementById("extract-status");
+  statusEl.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px">
+    <div style="font-weight:700;color:#15803d;margin-bottom:5px">✅ Processamento concluído!</div>
+    <div style="color:#166534;font-size:13px"><b>${savedCount}</b> doente${savedCount!==1?"s":""} guardado${savedCount!==1?"s":""} na base de dados${errorCount>0?` · <span style="color:#dc2626">${errorCount} erro${errorCount!==1?"s":""}</span>`:""}</div>
+  </div>`;
+  showNotif(`${savedCount} registo${savedCount!==1?"s":""} guardado${savedCount!==1?"s":""}!`,"ok");
+}
+
+async function extractSingleFile(fq){
   const statusEl=document.getElementById("extract-status");
   statusEl.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px;border:1.5px solid #dbe8f4;text-align:center">
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
@@ -914,7 +1066,49 @@ function renderAIInfo(){
     </div>`).join("");
 }
 
-// ── Helpers ───────────────────────────────────────────────────
+// ── Import JSON paste ────────────────────────────────────────
+function importFromJSON(){
+  const raw = document.getElementById("json-paste-area").value.trim();
+  const resultEl = document.getElementById("json-import-result");
+  if(!raw){ showNotif("Cole o JSON primeiro","err"); return; }
+
+  let parsed;
+  try{
+    // Accept raw JSON or wrapped in ```json ... ```
+    const clean = raw.replace(/^```json\s*/i,"").replace(/```\s*$/,"").trim();
+    parsed = JSON.parse(clean);
+  } catch(e){
+    resultEl.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:12px;color:#dc2626;font-size:13px">
+      ❌ JSON inválido. Certifique-se que copiou a resposta completa do Claude.ai.<br>
+      <span style="font-size:11px;opacity:.8">Erro: ${e.message}</span>
+    </div>`;
+    return;
+  }
+
+  // Merge into editData
+  state.editData = {...EMPTY};
+  FIELDS.forEach(f => {
+    if(parsed[f.key] !== undefined && parsed[f.key] !== null)
+      state.editData[f.key] = String(parsed[f.key]);
+  });
+  state.confidence = Object.fromEntries(FIELDS.map(f=>[f.key, state.editData[f.key]?"high":"empty"]));
+
+  const filled = FIELDS.filter(f=>state.editData[f.key]).length;
+  const pct = Math.round((filled/FIELDS.length)*100);
+
+  resultEl.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:12px;color:#166534;font-size:13px">
+    ✅ <b>${filled}</b>/${FIELDS.length} campos importados (${pct}%). A abrir formulário…
+  </div>`;
+
+  updateFormFields();
+  setTimeout(()=>{
+    showTab("form", document.querySelectorAll(".tab-btn")[1]);
+    document.getElementById("json-paste-area").value="";
+    resultEl.innerHTML="";
+  }, 1200);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
 function badgeStyle(estado){
   if(!estado) return{bg:"#f1f5f9",text:"#475569"};
   if(estado.includes("aguarda RNCCI")) return{bg:"#fef9c3",text:"#854d0e"};
