@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!-- v2.1 -->
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -72,10 +72,10 @@ label.field-label{font-size:12px;font-weight:600;color:#475569;display:flex;alig
 .modal{background:#fff;border-radius:16px;padding:32px;max-width:480px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 
 /* Table */
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{padding:11px 14px;color:#fff;font-weight:600;text-align:left;white-space:nowrap;font-size:12px;background:#1e4d7a}
-td{padding:11px 14px;border-bottom:1px solid #e8edf3}
-tr:nth-child(even){background:#fafbfc}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:10px 12px;color:#fff;font-weight:600;text-align:left;white-space:nowrap;font-size:11px;background:#1e4d7a}
+td{padding:9px 12px;border-bottom:1px solid #e8edf3;vertical-align:middle}
+tr:nth-child(even) td{background:#fafbfc}
 tr:hover td{background:#f0f7ff}
 .fade-in{animation:fi .3s ease}
 @keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
@@ -90,6 +90,11 @@ tr:hover td{background:#f0f7ff}
 .settings-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #f1f5f9}
 .settings-row:last-child{border-bottom:none}
 
+/* DB filter bar */
+.filter-bar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.filter-bar input{flex:1;min-width:200px;max-width:340px;padding:8px 12px;border:1.5px solid #d1dae5;border-radius:8px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;outline:none}
+.filter-bar input:focus{border-color:#1e4d7a;box-shadow:0 0 0 3px rgba(30,77,122,.1)}
+
 @media(max-width:768px){.grid2{grid-template-columns:1fr}.header{padding:0 16px}.content{padding:16px}.login-card{padding:28px 24px}}
 </style>
 </head>
@@ -103,7 +108,7 @@ tr:hover td{background:#f0f7ff}
     <div style="color:#64748b;font-size:14px;margin-bottom:32px">Gestão Dados Clínicos · Base Partilhada</div>
     <div style="text-align:left;margin-bottom:8px"><label style="font-size:13px;font-weight:600;color:#475569">Nome / Identificação profissional</label></div>
     <input id="login-name" class="fi" type="text" placeholder="Ex: Dr. Silva / Enf. Costa / TS Maria..." style="margin-bottom:12px" />
-    <button class="btn btn-p" style="width:100%;justify-content:center;font-size:15px;padding:13px" onclick="doLogin()">Entrar na Base de Dados</button>
+    <button class="btn btn-p" style="width:100%;justify-content:center;font-size:15px;padding:13px" id="login-btn">Entrar na Base de Dados</button>
     <div style="margin-top:20px;font-size:12px;color:#94a3b8;line-height:1.6">
       ⚠️ Esta base de dados é <b>partilhada</b> entre toda a equipa.<br>Os dados clínicos são confidenciais.
     </div>
@@ -173,38 +178,12 @@ tr:hover td{background:#f0f7ff}
           <!-- File queue -->
           <div id="file-queue" style="display:none;margin-top:14px"></div>
           <div id="file-actions" style="display:none;margin-top:14px;gap:12px">
-            <button class="btn btn-p" style="flex:1;justify-content:center;font-size:15px" onclick="extractAllFiles()" id="extract-btn">✨ Extrair todos com IA</button>
+            <button class="btn btn-p" style="flex:1;justify-content:center;font-size:15px" onclick="askUploadPassword()" id="extract-btn">✨ Extrair todos com IA</button>
             <button class="btn btn-s" onclick="clearAllFiles()">Limpar</button>
           </div>
           <div id="extract-status" style="margin-top:14px"></div>
 
-          <!-- JSON PASTE MODE -->
-          <div style="margin-top:20px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-              <div style="flex:1;height:1px;background:#e2e8f0"></div>
-              <span style="font-size:12px;color:#94a3b8;font-weight:600;white-space:nowrap">OU SEM CHAVE API</span>
-              <div style="flex:1;height:1px;background:#e2e8f0"></div>
-            </div>
-            <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:18px 20px">
-              <div style="font-weight:700;font-size:14px;color:#92400e;margin-bottom:6px">📋 Colar JSON do Claude.ai</div>
-              <div style="font-size:12px;color:#78350f;margin-bottom:14px;line-height:1.6">
-                Sem chave API? Use o <b>Claude.ai gratuito</b>:<br>
-                1. Abra <a href="https://claude.ai" target="_blank" style="color:#1e4d7a;font-weight:600">claude.ai</a> e cole o texto do relatório<br>
-                2. Peça: <i style="background:#fef3c7;padding:2px 6px;border-radius:4px">"Extrai os dados clínicos em JSON para RNCCI"</i><br>
-                3. Copie a resposta JSON e cole aqui:
-              </div>
-              <textarea id="json-paste-area" class="fi" rows="5"
-                placeholder='Cole aqui o JSON devolvido pelo Claude.ai...&#10;&#10;Exemplo: {"nome":"Maria Silva","diagnosticoPrincipal":"AVC","barthelAdmissao":"25",...}'
-                style="font-family:monospace;font-size:12px;background:#fff"></textarea>
-              <div style="display:flex;gap:10px;margin-top:10px">
-                <button class="btn btn-p" style="flex:1;justify-content:center" onclick="importFromJSON()">
-                  📥 Importar para Formulário
-                </button>
-                <button class="btn btn-s" style="font-size:12px" onclick="document.getElementById('json-paste-area').value=''">Limpar</button>
-              </div>
-              <div id="json-import-result" style="margin-top:10px"></div>
-            </div>
-          </div>
+
         </div>
 
         <div style="display:flex;flex-direction:column;gap:14px">
@@ -235,7 +214,7 @@ tr:hover td{background:#f0f7ff}
         <div style="flex:1">
           <div style="display:flex;justify-content:space-between;margin-bottom:7px">
             <span style="font-weight:600;font-size:14px">Campos preenchidos</span>
-            <span style="font-weight:700;font-size:14px;color:#1e4d7a" id="form-progress-label">0/40 (0%)</span>
+            <span style="font-weight:700;font-size:14px;color:#1e4d7a" id="form-progress-label">0/44 (0%)</span>
           </div>
           <div class="pbar"><div class="pfill" id="form-progress-bar" style="width:0%"></div></div>
         </div>
@@ -253,7 +232,7 @@ tr:hover td{background:#f0f7ff}
 
     <!-- DATABASE TAB -->
     <div id="tab-database" style="display:none" class="fade-in">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <div>
           <div style="font-weight:700;font-size:20px">Base de Dados Partilhada — RNCCI</div>
           <div style="color:#64748b;font-size:13px;margin-top:3px;display:flex;align-items:center;gap:8px">
@@ -265,9 +244,19 @@ tr:hover td{background:#f0f7ff}
         <div style="display:flex;gap:9px">
           <button class="btn btn-s" style="font-size:12px" onclick="syncNow()">🔄 Sincronizar</button>
           <button class="btn btn-s" onclick="newRecord()">➕ Novo Doente</button>
-          <button class="btn btn-s" onclick="exportCSV()" id="export-btn">📥 Exportar CSV</button>
-          <button class="btn btn-p" onclick="exportPDF()" id="export-pdf-btn">🖨️ Exportar PDF</button>
+          <button class="btn btn-p" onclick="exportDOC()" id="export-doc-btn">📄 Exportar Documento</button>
         </div>
+      </div>
+      <!-- Search/filter bar -->
+      <div class="filter-bar">
+        <input type="text" id="db-search" placeholder="🔍  Pesquisar por nome, diagnóstico, processo..." oninput="renderDB()">
+        <select id="db-filter-estado" onchange="renderDB()" style="padding:8px 12px;border:1.5px solid #d1dae5;border-radius:8px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;outline:none;background:#fff">
+          <option value="">Todos os estados</option>
+          <option value="aguarda RNCCI">Aguarda RNCCI</option>
+          <option value="vaga">Alta c/ Vaga</option>
+          <option value="Transferido">Transferido</option>
+          <option value="Óbito">Óbito</option>
+        </select>
       </div>
       <div id="db-loading" style="text-align:center;padding:60px;color:#64748b">
         <div class="spin" style="width:32px;height:32px;margin:0 auto 16px"></div>
@@ -285,9 +274,28 @@ tr:hover td{background:#f0f7ff}
         <div style="overflow-x:auto">
           <table>
             <thead><tr>
-              <th>Nº Processo</th><th>Nome</th><th>Diagnóstico</th>
-              <th>Barthel Adm.</th><th>Barthel Alta</th><th>Morse Adm.</th><th>Morse Alta</th><th>Aval. Fisiatria</th><th>Plano Fisiatria</th><th>Tipologia</th>
-              <th>Destino Alta</th><th>Estado</th><th>Por</th><th>Quando</th><th></th>
+              <th>Nº Processo</th>
+              <th>Nome</th>
+              <th>Nasc.</th>
+              <th>Serviço</th>
+              <th>Diagnóstico Principal</th>
+              <th>Barthel Adm.</th>
+              <th>Barthel Alta</th>
+              <th>Morse Adm.</th>
+              <th>Morse Alta</th>
+              <th>Braden Adm.</th>
+              <th>MIF Adm.</th>
+              <th>MIF Alta</th>
+              <th>Aval. Fisiatria</th>
+              <th>Plano Fisiatria</th>
+              <th>Tipologia</th>
+              <th>Destino Alta</th>
+              <th>Unidade Destino</th>
+              <th>Data Prev. Alta</th>
+              <th>Estado</th>
+              <th>Por</th>
+              <th>Quando</th>
+              <th></th>
             </tr></thead>
             <tbody id="db-tbody"></tbody>
           </table>
@@ -330,21 +338,22 @@ tr:hover td{background:#f0f7ff}
         <div class="card" style="margin-bottom:16px">
           <div style="font-weight:700;font-size:15px;color:#1e4d7a;margin-bottom:4px">🗄️ Base de Dados Partilhada (JSONBin)</div>
           <div style="font-size:13px;color:#64748b;margin-bottom:16px">
-            Para partilhar dados entre utilizadores, configure um bin gratuito em
-            <a href="https://jsonbin.io" target="_blank" style="color:#1e4d7a">jsonbin.io</a>.
-            Crie conta gratuita → New Bin → copie o BIN ID e a Master Key.
+            Partilhe dados entre utilizadores com um bin gratuito em <b>jsonbin.io</b>.<br>
+            <b>1.</b> Crie conta em <b>jsonbin.io</b><br>
+            <b>2.</b> Clique em <b>+ New Bin</b>, cole <code>{"records":[]}</code> e <b>desactive "Private"</b><br>
+            <b>3.</b> Copie o BIN ID (24 caracteres) e a Master Key ($2a$10$...)
           </div>
           <div class="settings-row">
-            <div><div style="font-weight:600;font-size:13px">JSONBin BIN ID</div><div style="font-size:12px;color:#64748b">Ex: 65f3a2...</div></div>
+            <div><div style="font-weight:600;font-size:13px">JSONBin BIN ID</div><div style="font-size:12px;color:#64748b">24 caracteres</div></div>
             <input type="text" id="jsonbin-id" class="fi" placeholder="65f3a2c9..." style="width:260px">
           </div>
           <div class="settings-row">
-            <div><div style="font-weight:600;font-size:13px">JSONBin Master Key</div><div style="font-size:12px;color:#64748b">$2a$10$...</div></div>
+            <div><div style="font-weight:600;font-size:13px">Master Key</div><div style="font-size:12px;color:#64748b">$2a$10$...</div></div>
             <input type="password" id="jsonbin-key" class="fi" placeholder="$2a$10$..." style="width:260px">
           </div>
-          <div style="margin-top:16px;display:flex;gap:10px">
-            <button class="btn btn-p" style="font-size:12px" onclick="saveJsonBinSettings()">💾 Guardar Configurações</button>
-            <button class="btn btn-s" style="font-size:12px" onclick="testJsonBin()">🔌 Testar Ligação</button>
+          <div style="margin-top:14px;display:flex;gap:10px">
+            <button class="btn btn-p" onclick="saveJsonBinSettings()">💾 Guardar</button>
+            <button class="btn btn-s" onclick="testJsonBin()">🔌 Testar</button>
           </div>
           <div id="jsonbin-test-result" style="margin-top:12px;font-size:13px"></div>
           <div style="margin-top:16px;padding:12px;background:#f0f7ff;border-radius:8px;border:1px solid #bfdbfe;font-size:12px;color:#1e40af">
@@ -381,46 +390,64 @@ tr:hover td{background:#f0f7ff}
 <script>
 // ── Config & State ───────────────────────────────────────────
 const FIELDS = [
-  {key:"processo",label:"Nº Processo",group:"identificacao"},
-  {key:"nome",label:"Nome Completo",group:"identificacao"},
-  {key:"dataNasc",label:"Data de Nascimento",group:"identificacao"},
-  {key:"utente",label:"Nº Utente SNS",group:"identificacao"},
-  {key:"servico",label:"Serviço / Enfermaria",group:"identificacao"},
-  {key:"cama",label:"Cama",group:"identificacao"},
-  {key:"dataInternamento",label:"Data de Internamento",group:"identificacao"},
-  {key:"medico",label:"Médico Responsável",group:"identificacao"},
-  {key:"diagnosticoPrincipal",label:"Diagnóstico Principal",group:"admissao"},
-  {key:"comorbilidades",label:"Comorbilidades",group:"admissao"},
-  {key:"barthelAdmissao",label:"Barthel Admissão (0–100)",group:"admissao"},
-  {key:"glasgowAdmissao",label:"Glasgow Admissão (3–15)",group:"admissao"},
-  {key:"bradenAdmissao",label:"Braden Admissão (6–23)",group:"admissao"},
-  {key:"mifAdmissao",label:"MIF Admissão (18–126)",group:"admissao"},
-  {key:"orientacao",label:"Orientação",group:"estadoCognitivo"},
-  {key:"comunicacao",label:"Comunicação",group:"estadoCognitivo"},
-  {key:"planoTerapeutico",label:"Plano Terapêutico Inicial",group:"plano"},
-  {key:"intercorrencias",label:"Intercorrências",group:"evolucao"},
-  {key:"dataFisiatria",label:"Data Avaliação Fisiatria",group:"evolucao"},
-  {key:"diagnosticoFuncional",label:"Diagnóstico Funcional",group:"evolucao"},
-  {key:"objectivosReabilitacao",label:"Objectivos Reabilitação",group:"evolucao"},
-  {key:"fisioterapia",label:"Fisioterapia",group:"terapias"},
-  {key:"terapiaOcupacional",label:"Terapia Ocupacional",group:"terapias"},
-  {key:"terapiaFala",label:"Terapia da Fala",group:"terapias"},
-  {key:"psicologia",label:"Psicologia",group:"terapias"},
-  {key:"servicoSocial",label:"Serviço Social",group:"terapias"},
-  {key:"nutricao",label:"Nutrição / Dietética",group:"terapias"},
-  {key:"barthelAlta",label:"Barthel Alta (0–100)",group:"evolucaoFuncional"},
-  {key:"mifAlta",label:"MIF Alta (18–126)",group:"evolucaoFuncional"},
-  {key:"bradenAlta",label:"Braden Alta (6–23)",group:"evolucaoFuncional"},
-  {key:"marchaTransferencias",label:"Marcha / Transferências",group:"evolucaoFuncional"},
-  {key:"tipologia",label:"Tipologia Proposta",group:"rncci"},
-  {key:"justificacao",label:"Justificação Clínica",group:"rncci"},
-  {key:"necesidadesTecnicas",label:"Necessidades Técnicas",group:"rncci"},
-  {key:"destinoAlta",label:"Destino Alta",group:"alta"},
-  {key:"unidadeDestino",label:"Unidade / Local de Destino",group:"alta"},
-  {key:"dataPrevistAlta",label:"Data Prevista Alta",group:"alta"},
-  {key:"dataEfectivaAlta",label:"Data Efectiva Alta",group:"alta"},
-  {key:"estadoActual",label:"Estado Actual",group:"alta"},
-  {key:"notasClinias",label:"Notas Clínicas",group:"alta"},
+  {key:"processo",             label:"Nº Processo",                        group:"identificacao"},
+  {key:"nome",                 label:"Nome Completo",                      group:"identificacao"},
+  {key:"dataNasc",             label:"Data de Nascimento",                 group:"identificacao"},
+  {key:"utente",               label:"Nº Utente SNS",                     group:"identificacao"},
+  {key:"servico",              label:"Serviço / Enfermaria",               group:"identificacao"},
+  {key:"cama",                 label:"Cama",                               group:"identificacao"},
+  {key:"dataInternamento",     label:"Data de Internamento",               group:"identificacao"},
+  {key:"medico",               label:"Médico Responsável",                 group:"identificacao"},
+  {key:"diagnosticoPrincipal", label:"Diagnóstico Principal",              group:"admissao"},
+  {key:"comorbilidades",       label:"Comorbilidades",                     group:"admissao"},
+  {key:"barthelAdmissao",      label:"Barthel Admissão (0–100)",           group:"admissao"},
+  {key:"glasgowAdmissao",      label:"Glasgow Admissão (3–15)",            group:"admissao"},
+  {key:"bradenAdmissao",       label:"Braden Admissão (6–23)",             group:"admissao"},
+  {key:"mifAdmissao",          label:"MIF Admissão (18–126)",              group:"admissao"},
+  {key:"morseAdmissao",        label:"Escala de Morse Admissão (0–125)",   group:"admissao"},
+  {key:"orientacao",           label:"Orientação",                         group:"estadoCognitivo"},
+  {key:"comunicacao",          label:"Comunicação",                        group:"estadoCognitivo"},
+  {key:"planoTerapeutico",     label:"Plano Terapêutico Inicial",          group:"plano"},
+  {key:"intercorrencias",      label:"Intercorrências",                    group:"evolucao"},
+  {key:"dataFisiatria",        label:"Data Avaliação Fisiatria",           group:"evolucao"},
+  {key:"diagnosticoFuncional", label:"Diagnóstico Funcional",              group:"evolucao"},
+  {key:"objectivosReabilitacao",label:"Objectivos Reabilitação",           group:"evolucao"},
+  {key:"avaliacaoFisiatria",   label:"Avaliação de Fisiatria",             group:"evolucao"},
+  {key:"planoFisiatria",       label:"Plano de Fisiatria",                 group:"evolucao"},
+  {key:"fisioterapia",         label:"Fisioterapia",                       group:"terapias"},
+  {key:"terapiaOcupacional",   label:"Terapia Ocupacional",                group:"terapias"},
+  {key:"terapiaFala",          label:"Terapia da Fala",                    group:"terapias"},
+  {key:"psicologia",           label:"Psicologia",                         group:"terapias"},
+  {key:"servicoSocial",        label:"Serviço Social",                     group:"terapias"},
+  {key:"avaliacaoAssistenteSocial", label:"Avaliação Assistente Social",       group:"terapias"},
+  {key:"nutricao",             label:"Nutrição / Dietética",               group:"terapias"},
+  {key:"barthelAlta",          label:"Barthel Alta (0–100)",               group:"evolucaoFuncional"},
+  {key:"mifAlta",              label:"MIF Alta (18–126)",                  group:"evolucaoFuncional"},
+  {key:"bradenAlta",           label:"Braden Alta (6–23)",                 group:"evolucaoFuncional"},
+  {key:"morseAlta",            label:"Escala de Morse Alta (0–125)",       group:"evolucaoFuncional"},
+  {key:"marchaTransferencias", label:"Marcha / Transferências",            group:"evolucaoFuncional"},
+  {key:"tipologia",            label:"Tipologia Proposta",                 group:"rncci"},
+  {key:"justificacao",         label:"Justificação Clínica",               group:"rncci"},
+  {key:"necesidadesTecnicas",  label:"Necessidades Técnicas",              group:"rncci"},
+  {key:"destinoAlta",          label:"Destino Alta",                       group:"alta"},
+  {key:"unidadeDestino",       label:"Unidade / Local de Destino",         group:"alta"},
+  {key:"dataPrevistAlta",      label:"Data Prevista Alta",                 group:"alta"},
+  {key:"dataEfectivaAlta",     label:"Data Efectiva Alta",                 group:"alta"},
+  {key:"estadoActual",         label:"Estado Actual",                      group:"alta"},
+  {key:"notaAltaEnfermagem",   label:"Nota de Alta de Enfermagem",         group:"alta"},
+  {key:"notaAltaMedica",       label:"Nota de Alta Médica",                group:"alta"},
+  {key:"svPrimeiraData",       label:"Data 1ª Avaliação SV",               group:"sinaisVitais"},
+  {key:"svPrimeiraPA",         label:"PA 1ª (mmHg)",                       group:"sinaisVitais"},
+  {key:"svPrimeiraFC",         label:"FC 1ª (bpm)",                        group:"sinaisVitais"},
+  {key:"svPrimeiraT",          label:"T 1ª (ºC)",                          group:"sinaisVitais"},
+  {key:"svPrimeiraSatO2",      label:"SatO2 1ª (%)",                       group:"sinaisVitais"},
+  {key:"svPrimeiraGlic",       label:"Glicemia 1ª (mg/dl)",                group:"sinaisVitais"},
+  {key:"svUltimaData",         label:"Data Última Avaliação SV",           group:"sinaisVitais"},
+  {key:"svUltimaPA",           label:"PA Última (mmHg)",                   group:"sinaisVitais"},
+  {key:"svUltimaFC",           label:"FC Última (bpm)",                    group:"sinaisVitais"},
+  {key:"svUltimaT",            label:"T Última (ºC)",                      group:"sinaisVitais"},
+  {key:"svUltimaSatO2",        label:"SatO2 Última (%)",                   group:"sinaisVitais"},
+  {key:"svUltimaGlic",         label:"Glicemia Última (mg/dl)",            group:"sinaisVitais"},
 ];
 
 const GROUPS = {
@@ -433,9 +460,10 @@ const GROUPS = {
   evolucaoFuncional:{label:"Evolução Funcional",icon:"🔄",color:"#2563a8"},
   rncci:            {label:"Proposta RNCCI",icon:"📝",color:"#1e4d7a"},
   alta:             {label:"Alta & Destino",icon:"🚪",color:"#1e6e96"},
+  sinaisVitais:     {label:"Sinais Vitais & Glicemia",icon:"📊",color:"#0f766e"},
 };
 
-const LONG_FIELDS = new Set(["planoTerapeutico","intercorrencias","comorbilidades","justificacao","notasClinias","objectivosReabilitacao","diagnosticoFuncional","fisioterapia"]);
+const LONG_FIELDS = new Set(["planoTerapeutico","intercorrencias","comorbilidades","justificacao","notaAltaEnfermagem","notaAltaMedica","objectivosReabilitacao","diagnosticoFuncional","fisioterapia","avaliacaoFisiatria","planoFisiatria","avaliacaoAssistenteSocial"]);
 const EMPTY = Object.fromEntries(FIELDS.map(f=>[f.key,""]));
 
 let state = {
@@ -446,8 +474,6 @@ let state = {
   file: null, fileB64: null, fileType: null, fileText: "",
   lastSync: null,
   apiKey: "",
-  jsonBinId: "",
-  jsonBinKey: "",
 };
 
 // ── LocalStorage ─────────────────────────────────────────────
@@ -455,64 +481,81 @@ function lsGet(k){try{return localStorage.getItem(k);}catch{return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,v);}catch{}}
 
 // ── JSONBin (base partilhada) ─────────────────────────────────
+// Configurar em ⚙️ Configurações — criar bin gratuito em jsonbin.io
+function jbConfig(){
+  return {
+    id:  lsGet("rncci_jbid")||"",
+    key: lsGet("rncci_jbkey")||""
+  };
+}
+
+// ── Google Apps Script (base partilhada) ────────────────────
+// Web App URL configurado nas definições — sem CORS issues
 async function jbGet(){
-  const {jsonBinId,jsonBinKey}=state;
-  if(!jsonBinId||!jsonBinKey) return null;
+  const {id,key}=jbConfig();
+  if(!id||!key) return null;
   try{
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${jsonBinId}/latest`,{
-      headers:{"X-Master-Key":jsonBinKey,"X-Bin-Meta":false}
-    });
-    if(!r.ok) return null;
+    // GET sem header de auth — bin deve ser público no jsonbin.io
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`);
+    if(!r.ok){console.warn("JSONBin GET erro",r.status);return null;}
     const d=await r.json();
-    return d.record||d;
-  }catch{return null;}
+    console.log("JSONBin GET ok, registos:",d.record?.records?.length);
+    return d.record||null;
+  }catch(e){
+    console.error("JSONBin GET falhou:",e.message);
+    return null;
+  }
 }
 
 async function jbSet(data){
-  const {jsonBinId,jsonBinKey}=state;
-  if(!jsonBinId||!jsonBinKey) return false;
+  const {id,key}=jbConfig();
+  if(!id||!key) return false;
   try{
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${jsonBinId}`,{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${id}`,{
       method:"PUT",
-      headers:{"Content-Type":"application/json","X-Master-Key":jsonBinKey},
+      headers:{"Content-Type":"application/json","X-Master-Key":key},
       body:JSON.stringify(data)
     });
-    return r.ok;
-  }catch{return false;}
+    if(!r.ok){const t=await r.text().catch(()=>"");console.error("JSONBin PUT erro",r.status,t);return false;}
+    console.log("JSONBin PUT ok");
+    return true;
+  }catch(e){
+    console.error("JSONBin PUT falhou:",e.message);
+    return false;
+  }
 }
-
 // ── Load & Save records ──────────────────────────────────────
 async function loadRecords(){
   const d=await jbGet();
   if(d&&Array.isArray(d.records)){
     state.records=d.records;
+    lsSet("rncci_records",JSON.stringify(d.records));
   } else {
-    // Fallback: localStorage
     try{state.records=JSON.parse(lsGet("rncci_records")||"[]");}catch{state.records=[];}
   }
   state.lastSync=new Date();
 }
 
 async function saveRecords(){
-  // Guardar no JSONBin (partilhado)
-  const ok=await jbSet({records:state.records});
-  // Sempre guardar também em localStorage como fallback
   lsSet("rncci_records",JSON.stringify(state.records));
+  const ok=await jbSet({records:state.records});
+  if(!ok) showNotif("⚠️ Guardado localmente (JSONBin indisponível)","err");
   return ok;
 }
 
 // ── Login ────────────────────────────────────────────────────
-function doLogin(){
+async function doLogin(){
   const name=document.getElementById("login-name").value.trim();
   if(!name){showNotif("Por favor insira o seu nome","err");return;}
   state.user=name;
   lsSet("rncci_user",name);
   document.getElementById("login-screen").style.display="none";
   document.getElementById("app").style.display="block";
-  initApp();
+  await initApp();
 }
 
 document.getElementById("login-name").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+document.getElementById("login-btn").addEventListener("click", doLogin);
 
 function doLogout(){
   document.getElementById("app").style.display="none";
@@ -521,11 +564,51 @@ function doLogout(){
 }
 
 // ── Init ─────────────────────────────────────────────────────
+function updateSettingsUI(){
+  const apiOk=!!state.apiKey;
+  const el=document.getElementById("api-key-status");
+  if(el){el.textContent=apiOk?"Configurada ✅":"Não configurada";el.style.color=apiOk?"#059669":"#dc2626";}
+  const badge=document.getElementById("ai-key-badge");
+  if(badge) badge.innerHTML=`<span class="badge" style="background:${apiOk?"#dcfce7":"#fee2e2"};color:${apiOk?"#166534":"#dc2626"}">${apiOk?"✅ Activa":"❌ Não configurada"}</span>`;
+  const keyInput=document.getElementById("api-key-input");
+  if(keyInput&&state.apiKey) keyInput.placeholder="••••••••••••••••";
+  const repoInput=document.getElementById("gh-repo");
+  if(repoInput&&state.gasUrl) repoInput.value=state.gasUrl;
+  const warn=document.getElementById("ai-key-warning");
+  if(warn) warn.style.display=apiOk?"none":"block";
+}
+
+function saveJsonBinSettings(){
+  const id=document.getElementById("jsonbin-id").value.trim();
+  const key=document.getElementById("jsonbin-key").value.trim();
+  if(!id||!key){showNotif("Preencha o BIN ID e a Master Key","err");return;}
+  lsSet("rncci_jbid",id);
+  lsSet("rncci_jbkey",key);
+  showNotif("Configurações JSONBin guardadas","ok");
+  syncNow();
+}
+
+async function testJsonBin(){
+  const el=document.getElementById("jsonbin-test-result");
+  el.innerHTML=`<span style="color:#64748b">⏳ A testar…</span>`;
+  const id=document.getElementById("jsonbin-id").value.trim();
+  const key=document.getElementById("jsonbin-key").value.trim();
+  if(!id||!key){el.innerHTML=`<span style="color:#dc2626">⚠️ Preencha os campos primeiro</span>`;return;}
+  try{
+    const r=await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`);
+    if(r.ok){
+      el.innerHTML=`<span style="color:#059669">✅ Ligação OK — bin acessível publicamente</span>`;
+    } else {
+      el.innerHTML=`<span style="color:#dc2626">❌ Erro ${r.status} — verifique se o bin existe e é público</span>`;
+    }
+  }catch(e){
+    el.innerHTML=`<span style="color:#dc2626">❌ ${e.message}</span>`;
+  }
+}
+
 async function initApp(){
-  // Restaurar configurações
   state.apiKey=lsGet("rncci_apikey")||"";
-  state.jsonBinId=lsGet("rncci_jbid")||"";
-  state.jsonBinKey=lsGet("rncci_jbkey")||"";
+  state.gasUrl=lsGet("rncci_gasurl")||"";
 
   document.getElementById("header-username").textContent=state.user;
   document.getElementById("form-username-label").textContent=state.user;
@@ -534,7 +617,6 @@ async function initApp(){
   buildFormGroups();
   renderAIInfo();
 
-  // Auto-sincronizar a cada 30s
   setInterval(syncNow,30000);
 
   showTab("upload",document.querySelectorAll(".tab-btn")[0]);
@@ -568,8 +650,55 @@ function askSettingsPassword(btn){
     <button class="btn btn-p" onclick="checkSettingsPassword()">🔓 Entrar</button>`;
   document.getElementById("modal").style.display="flex";
   setTimeout(()=>document.getElementById("settings-pw-input").focus(),100);
-  // store btn ref
   window._settingsBtn = btn;
+}
+
+let uploadUnlocked = false;
+
+function askUploadPassword(){
+  if(uploadUnlocked){ extractAllFiles(); return; }
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Área protegida</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:16px">Introduza a palavra-passe para usar a extracção por IA.</div>
+    <input type="password" id="upload-pw-input" class="fi" placeholder="Palavra-passe…" style="margin-bottom:4px"
+      onkeydown="if(event.key==='Enter')checkUploadPassword('extract')">
+    <div id="upload-pw-error" style="color:#dc2626;font-size:12px;margin-top:6px;display:none">❌ Palavra-passe incorrecta</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-p" onclick="checkUploadPassword('extract')">🔓 Entrar</button>`;
+  document.getElementById("modal").style.display="flex";
+  setTimeout(()=>document.getElementById("upload-pw-input").focus(),100);
+}
+
+function askJsonPastePassword(){
+  if(uploadUnlocked){ importFromJSON(); return; }
+  document.getElementById("modal-content").innerHTML=`
+    <div style="font-size:36px;margin-bottom:12px">🔒</div>
+    <div style="font-weight:700;font-size:17px;margin-bottom:8px">Área protegida</div>
+    <div style="color:#64748b;font-size:14px;margin-bottom:16px">Introduza a palavra-passe para importar dados por JSON.</div>
+    <input type="password" id="upload-pw-input" class="fi" placeholder="Palavra-passe…" style="margin-bottom:4px"
+      onkeydown="if(event.key==='Enter')checkUploadPassword('json')">
+    <div id="upload-pw-error" style="color:#dc2626;font-size:12px;margin-top:6px;display:none">❌ Palavra-passe incorrecta</div>`;
+  document.getElementById("modal-actions").innerHTML=`
+    <button class="btn btn-s" onclick="closeModal()">Cancelar</button>
+    <button class="btn btn-p" onclick="checkUploadPassword('json')">🔓 Entrar</button>`;
+  document.getElementById("modal").style.display="flex";
+  setTimeout(()=>document.getElementById("upload-pw-input").focus(),100);
+}
+
+function checkUploadPassword(action){
+  const val = document.getElementById("upload-pw-input").value;
+  if(val === "Dinisclara1"){
+    uploadUnlocked = true;
+    closeModal();
+    if(action==="extract") extractAllFiles();
+    else if(action==="json") importFromJSON();
+  } else {
+    document.getElementById("upload-pw-error").style.display="block";
+    document.getElementById("upload-pw-input").value="";
+    document.getElementById("upload-pw-input").focus();
+  }
 }
 
 function checkSettingsPassword(){
@@ -595,7 +724,7 @@ function showTab(name,btn){
 }
 
 // ── File handling (multi-file) ───────────────────────────────
-let fileQueue = []; // [{file, b64, type, text, status:'pending'|'done'|'error', name}]
+let fileQueue = [];
 
 function handleDropMulti(e){
   e.preventDefault();
@@ -611,16 +740,30 @@ function handleMultiFileSelect(fileList){
 
 function addFilesToQueue(files){
   files.forEach(f => {
-    if(fileQueue.find(q=>q.name===f.name)) return; // evitar duplicados
-    fileQueue.push({file:f, b64:null, type:f.type, text:"", status:"pending", name:f.name});
+    if(fileQueue.find(q=>q.name===f.name)) return;
+    let ftype = f.type;
+    if(!ftype || ftype===""){
+      const ext = f.name.split(".").pop().toLowerCase();
+      if(ext==="pdf") ftype="application/pdf";
+      else if(ext==="png") ftype="image/png";
+      else if(ext==="jpg"||ext==="jpeg") ftype="image/jpeg";
+      else ftype="text/plain";
+    }
+    const entry = {file:f, b64:null, type:ftype, text:"", status:"pending", name:f.name};
+    fileQueue.push(entry);
     const reader = new FileReader();
-    const idx = fileQueue.length-1;
-    if(f.type.startsWith("image/")||f.type==="application/pdf"){
-      reader.onload = ()=>{ fileQueue[idx].b64=reader.result.split(",")[1]; renderQueue(); };
+    if(ftype.startsWith("image/")||ftype==="application/pdf"){
+      reader.onload = ()=>{
+        try{ entry.b64=reader.result.split(",")[1]; entry.status="pending"; }
+        catch(e){ entry.status="error"; entry.errMsg=e.message; }
+        renderQueue();
+      };
+      reader.onerror = ()=>{ entry.status="error"; entry.errMsg="Erro ao ler ficheiro"; renderQueue(); };
       reader.readAsDataURL(f);
     } else {
-      reader.onload = ()=>{ fileQueue[idx].text=reader.result; renderQueue(); };
-      reader.readAsText(f);
+      reader.onload = ()=>{ entry.text=reader.result; entry.status="pending"; renderQueue(); };
+      reader.onerror = ()=>{ entry.status="error"; entry.errMsg="Erro ao ler texto"; renderQueue(); };
+      reader.readAsText(f, "UTF-8");
     }
   });
   renderQueue();
@@ -647,7 +790,7 @@ function renderQueue(){
           <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.name}</span>
           <span style="font-size:11px;color:#94a3b8">${(f.file.size/1024).toFixed(1)} KB</span>
           <span class="badge" style="background:${f.status==="done"||f.status==="saved"?"#dcfce7":f.status==="error"?"#fee2e2":f.status==="processing"?"#dbeafe":"#f1f5f9"};color:${f.status==="done"||f.status==="saved"?"#166534":f.status==="error"?"#dc2626":f.status==="processing"?"#1d4ed8":"#475569"}">
-            ${f.status==="pending"?"Aguarda":f.status==="processing"?"A extrair…":f.status==="done"?"Extraído":f.status==="saved"?"Guardado":"Erro"}
+            ${f.status==="pending"?"Aguarda":f.status==="processing"?"A extrair…":f.status==="done"?"Extraído":f.status==="saved"?"Guardado":`Erro${f.errMsg?" — "+f.errMsg:""}`}
           </span>
           ${f.status==="pending"?`<button onclick="removeFromQueue(${i})" style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:16px;line-height:1">×</button>`:""}
         </div>`).join("")}
@@ -673,14 +816,17 @@ function clearAllFiles(){
   document.getElementById("file-input").value="";
 }
 
-// Legacy single-file compat
-function clearFile(){ clearAllFiles(); }
-
 // ── AI Extraction ─────────────────────────────────────────────
 const SYSTEM_PROMPT=`És um assistente clínico especializado em análise de relatórios médicos portugueses para a RNCCI.
 Extrai informação clínica e devolve APENAS JSON válido com estes campos (string vazia "" se não disponível):
-{"processo":"","nome":"","dataNasc":"","utente":"","servico":"","cama":"","dataInternamento":"","medico":"","diagnosticoPrincipal":"","comorbilidades":"","barthelAdmissao":"","glasgowAdmissao":"","bradenAdmissao":"","mifAdmissao":"","morseAdmissao":"","orientacao":"","comunicacao":"","planoTerapeutico":"","intercorrencias":"","dataFisiatria":"","diagnosticoFuncional":"","objectivosReabilitacao":"","avaliacaoFisiatria":"","planoFisiatria":"","fisioterapia":"","terapiaOcupacional":"","terapiaFala":"","psicologia":"","servicoSocial":"","nutricao":"","barthelAlta":"","mifAlta":"","bradenAlta":"","morseAlta":"","marchaTransferencias":"","tipologia":"","justificacao":"","necesidadesTecnicas":"","destinoAlta":"","unidadeDestino":"","dataPrevistAlta":"","dataEfectivaAlta":"","estadoActual":"","notasClinias":""}
-Regras: apenas JSON; valores em português; escalas só o número.`;
+{"processo":"","nome":"","dataNasc":"","utente":"","servico":"","cama":"","dataInternamento":"","medico":"","diagnosticoPrincipal":"","comorbilidades":"","barthelAdmissao":"","glasgowAdmissao":"","bradenAdmissao":"","mifAdmissao":"","morseAdmissao":"","orientacao":"","comunicacao":"","planoTerapeutico":"","intercorrencias":"","dataFisiatria":"","diagnosticoFuncional":"","objectivosReabilitacao":"","avaliacaoFisiatria":"","planoFisiatria":"","fisioterapia":"","terapiaOcupacional":"","terapiaFala":"","psicologia":"","servicoSocial":"","avaliacaoAssistenteSocial":"","nutricao":"","barthelAlta":"","mifAlta":"","bradenAlta":"","morseAlta":"","marchaTransferencias":"","tipologia":"","justificacao":"","necesidadesTecnicas":"","destinoAlta":"","unidadeDestino":"","dataPrevistAlta":"","dataEfectivaAlta":"","estadoActual":"","notaAltaEnfermagem":"","notaAltaMedica":"","svPrimeiraData":"","svPrimeiraPA":"","svPrimeiraFC":"","svPrimeiraT":"","svPrimeiraSatO2":"","svPrimeiraGlic":"","svUltimaData":"","svUltimaPA":"","svUltimaFC":"","svUltimaT":"","svUltimaSatO2":"","svUltimaGlic":""}
+
+Regras:
+- Devolve APENAS JSON válido, sem texto adicional
+- Valores em português; escalas apenas o número
+- Sinais vitais: procura registos de PA (mmHg), FC (bpm), T (ºC), SatO2 (%), Glicemia/GLIC (mg/dl) em notas de enfermagem, registos de monitorização, tabelas de sinais vitais. Extrai os valores da PRIMEIRA avaliação registada (data mais antiga) e da ÚLTIMA (data mais recente), com a respectiva data em formato DD/MM/AAAA. Se só houver uma avaliação, usa-a como primeira e última.
+- Escalas Barthel, Glasgow, Braden, MIF, Morse: procura em todo o documento incluindo tabelas, gráficos de evolução, notas de enfermagem, avaliações de reabilitação, registos de fisiatria. Extrai o valor numérico. Se genuinamente não encontrares, deixa "".
+- notaAltaEnfermagem e notaAltaMedica: só preencher se existir explicitamente uma nota de alta de enfermagem ou médica — caso contrário "".`;
 
 async function extractAllFiles(){
   if(!state.apiKey){
@@ -690,175 +836,215 @@ async function extractAllFiles(){
   }
   if(!fileQueue.length){showNotif("Seleccione pelo menos um ficheiro","err");return;}
 
-  const pending = fileQueue.filter(f=>f.status==="pending");
+  // Process all pending files in sequence automatically
+  const pending = fileQueue.filter(f=>f.status==="pending"||f.status==="error");
   if(!pending.length){showNotif("Todos os ficheiros já foram processados","err");return;}
 
+  const total = fileQueue.length;
+  const statusEl=document.getElementById("extract-status");
   document.getElementById("extract-btn").disabled=true;
-  document.getElementById("extract-btn").textContent="A processar…";
 
-  let savedCount=0, errorCount=0;
-  for(let i=0;i<fileQueue.length;i++){
-    if(fileQueue[i].status!=="pending") continue;
-    fileQueue[i].status="processing";
+  for(let i=0; i<pending.length; i++){
+    const fq = pending[i];
+    const doneCount = fileQueue.filter(f=>f.status==="done"||f.status==="saved").length;
+    const progressPct = Math.round((doneCount/total)*100);
+
+    fq.status="processing";
     renderQueue();
+
+    document.getElementById("extract-btn").textContent=`A extrair ${doneCount+1}/${total}…`;
+
+    statusEl.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px;border:1.5px solid #dbe8f4;text-align:center">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
+        <div class="spin" style="width:22px;height:22px"></div>
+        <span style="font-weight:600;color:#1e4d7a;font-size:15px">A analisar: ${fq.name}</span>
+      </div>
+      <div style="color:#64748b;font-size:13px;margin-bottom:8px">Ficheiro ${doneCount+1} de ${total} — O Claude está a extrair a informação</div>
+      <div class="pbar"><div class="pfill" style="width:${Math.max(10,progressPct)}%"></div></div>
+      <div style="font-size:11px;color:#94a3b8;margin-top:6px">${doneCount} ficheiro${doneCount!==1?"s":""} concluído${doneCount!==1?"s":""}</div>
+    </div>`;
+
     try{
-      const result = await extractSingleFile(fileQueue[i]);
-      // Auto-save to DB
-      const now=new Date().toLocaleString("pt-PT");
-      const existing=state.records.find(r=>r.processo&&r.processo===result.processo);
-      const rec={...result,_id:existing?._id||result.processo||"rncci_"+Date.now(),_savedAt:now,_savedBy:state.user||"Anónimo",_history:[...(existing?._history||[]),{at:now,by:state.user}].slice(-10)};
-      if(existing){state.records=state.records.map(r=>r._id===rec._id?rec:r);}
-      else{state.records=[...state.records,rec];}
-      fileQueue[i].status="saved";
-      savedCount++;
-    } catch(e){
-      fileQueue[i].status="error";
-      errorCount++;
-    }
-    renderQueue();
-  }
+      const result = await extractSingleFile(fq);
+      fq.status="done";
+      renderQueue();
 
-  // Save all to DB at once
-  await saveRecords();
-  renderDB();
+      // Se só 1 ficheiro → vai para formulário para revisão
+      // Se múltiplos → guarda automaticamente
+      if(pending.length === 1){
+        fq.status="done";
+        renderQueue();
+        state.editData = {...EMPTY, ...result};
+        state.confidence = Object.fromEntries(FIELDS.map(f=>[f.key, result[f.key]?"high":"empty"]));
+        updateFormFields();
+        const filled = FIELDS.filter(f=>state.editData[f.key]).length;
+        const pct = Math.round((filled/FIELDS.length)*100);
+        statusEl.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px">
+          <div style="font-weight:700;color:#15803d;margin-bottom:5px">✅ Extracção concluída — ${fq.name}</div>
+          <div style="color:#166534;font-size:13px"><b>${filled}</b>/${FIELDS.length} campos preenchidos (${pct}%). Reveja e guarde no <b>Formulário Clínico</b>.</div>
+        </div>`;
+        document.getElementById("extract-btn").disabled=false;
+        document.getElementById("extract-btn").textContent="✨ Extrair todos com IA";
+        setTimeout(()=>{ showTab("form", document.querySelectorAll(".tab-btn")[1]); }, 800);
+        return;
+      } else {
+        // Múltiplos ficheiros — guarda automaticamente
+        const now=new Date().toLocaleString("pt-PT");
+        const recData={...EMPTY,...result};
+        const existing=state.records.find(r=>r.processo&&r.processo===recData.processo);
+        const rec={
+          ...recData,
+          _id:existing?._id||recData.processo||"rncci_"+Date.now()+"_"+i,
+          _savedAt:now,
+          _savedBy:state.user||"Anónimo",
+          _history:[...(existing?._history||[]),{at:now,by:state.user}].slice(-10)
+        };
+        if(existing){state.records=state.records.map(r=>r._id===rec._id?rec:r);}
+        else{state.records=[...state.records,rec];}
+        await saveRecords();
+        fq.status="saved";
+        renderQueue();
+      }
+
+    } catch(e){
+      fq.status="error";
+      fq.errMsg=e.message||"Erro desconhecido";
+      renderQueue();
+      // Continue to next file even on error
+    }
+  } // end for loop
+
+  // All done
+  const saved = fileQueue.filter(f=>f.status==="saved").length;
+  const errors = fileQueue.filter(f=>f.status==="error").length;
 
   document.getElementById("extract-btn").disabled=false;
   document.getElementById("extract-btn").textContent="✨ Extrair todos com IA";
 
-  const statusEl=document.getElementById("extract-status");
-  statusEl.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px">
-    <div style="font-weight:700;color:#15803d;margin-bottom:5px">✅ Processamento concluído!</div>
-    <div style="color:#166534;font-size:13px"><b>${savedCount}</b> doente${savedCount!==1?"s":""} guardado${savedCount!==1?"s":""} na base de dados${errorCount>0?` · <span style="color:#dc2626">${errorCount} erro${errorCount!==1?"s":""}</span>`:""}</div>
-  </div>`;
-  showNotif(`${savedCount} registo${savedCount!==1?"s":""} guardado${savedCount!==1?"s":""}!`,"ok");
+  if(errors===0){
+    statusEl.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:16px;text-align:center">
+      <div style="font-size:24px;margin-bottom:8px">🎉</div>
+      <div style="font-weight:700;color:#15803d;font-size:15px;margin-bottom:6px">Todos os ficheiros processados e guardados!</div>
+      <div style="color:#166534;font-size:13px">${saved} registo${saved!==1?"s":""} adicionado${saved!==1?"s":""} à base partilhada automaticamente.</div>
+      <button class="btn btn-p" style="margin-top:12px;font-size:13px" onclick="showTab('database',document.querySelectorAll('.tab-btn')[2])">Ver Base de Dados →</button>
+    </div>`;
+    showNotif("✅ "+saved+" registo"+( saved!==1?"s":"")+" guardados automaticamente","ok");
+  } else {
+    statusEl.innerHTML=`<div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:16px;text-align:center">
+      <div style="font-weight:700;color:#92400e;font-size:15px;margin-bottom:6px">⚠️ Processamento concluído com erros</div>
+      <div style="color:#78350f;font-size:13px">${saved} guardado${saved!==1?"s":""} · ${errors} com erro — verifique os ficheiros assinalados a vermelho.</div>
+      <button class="btn btn-p" style="margin-top:12px;font-size:13px" onclick="showTab('database',document.querySelectorAll('.tab-btn')[2])">Ver Base de Dados →</button>
+    </div>`;
+    showNotif("⚠️ "+saved+" guardados, "+errors+" com erro","err");
+  }
+
+  await syncNow();
 }
 
 async function extractSingleFile(fq){
-  const statusEl=document.getElementById("extract-status");
-  statusEl.innerHTML=`<div style="background:#fff;border-radius:12px;padding:18px 22px;border:1.5px solid #dbe8f4;text-align:center">
-    <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
-      <div class="spin" style="width:22px;height:22px"></div>
-      <span style="font-weight:600;color:#1e4d7a;font-size:15px">A analisar o relatório clínico…</span>
-    </div>
-    <div style="color:#64748b;font-size:13px;margin-bottom:12px">O Claude está a extrair e estruturar a informação</div>
-    <div class="pbar"><div class="pfill pulse" style="width:65%"></div></div>
-  </div>`;
-
-  try{
-    let messages;
-    if(state.fileType==="application/pdf"){
-      messages=[{role:"user",content:[
-        {type:"document",source:{type:"base64",media_type:"application/pdf",data:state.fileB64}},
-        {type:"text",text:"Analisa este relatório clínico. Devolve apenas o JSON."}
-      ]}];
-    } else if(state.fileType&&state.fileType.startsWith("image/")){
-      messages=[{role:"user",content:[
-        {type:"image",source:{type:"base64",media_type:state.fileType,data:state.fileB64}},
-        {type:"text",text:"Analisa este relatório clínico. Devolve apenas o JSON."}
-      ]}];
-    } else {
-      messages=[{role:"user",content:`Analisa este relatório clínico:\n\n${state.fileText}`}];
-    }
-
-    const res=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":state.apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:SYSTEM_PROMPT,messages})
+  if((fq.type==="application/pdf"||fq.type.startsWith("image/"))&&!fq.b64){
+    await new Promise((resolve,reject)=>{
+      let tries=0;
+      const t=setInterval(()=>{
+        tries++;
+        if(fq.b64){clearInterval(t);resolve();}
+        if(tries>50){clearInterval(t);reject(new Error("Timeout a ler ficheiro"));}
+      },200);
     });
-
-    if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Erro API");}
-    const json=await res.json();
-    const raw=json.content?.[0]?.text||"";
-    const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
-
-    state.confidence=Object.fromEntries(FIELDS.map(f=>[f.key,parsed[f.key]?"high":"empty"]));
-    state.editData={...EMPTY,...parsed};
-    updateFormFields();
-
-    const filled=FIELDS.filter(f=>state.editData[f.key]).length;
-    const pct=Math.round((filled/FIELDS.length)*100);
-    statusEl.innerHTML=`<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:14px">
-      <div style="font-weight:700;color:#15803d;margin-bottom:5px">✅ Extracção concluída!</div>
-      <div style="color:#166534;font-size:13px"><b>${filled}</b>/${FIELDS.length} campos preenchidos (${pct}%). Verifique no <b>Formulário Clínico</b>.</div>
-      <div class="pbar" style="margin-top:10px"><div class="pfill" style="width:${pct}%;background:linear-gradient(90deg,#16a34a,#4ade80)"></div></div>
-    </div>`;
-
-    showTab("form",document.querySelectorAll(".tab-btn")[1]);
-  } catch(e){
-    statusEl.innerHTML=`<div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:14px;color:#dc2626;font-size:14px">⚠️ Erro: ${e.message}</div>`;
   }
-}
 
-// ── Form ─────────────────────────────────────────────────────
-function buildFormGroups(){
-  const container=document.getElementById("form-groups");
-  container.innerHTML="";
-  const grouped={};
-  FIELDS.forEach(f=>{(grouped[f.group]=grouped[f.group]||[]).push(f);});
+  let messages;
+  if(fq.type==="application/pdf"){
+    messages=[{role:"user",content:[
+      {type:"document",source:{type:"base64",media_type:"application/pdf",data:fq.b64}},
+      {type:"text",text:"Analisa este relatório clínico. Devolve apenas o JSON."}
+    ]}];
+  } else if(fq.type&&fq.type.startsWith("image/")){
+    messages=[{role:"user",content:[
+      {type:"image",source:{type:"base64",media_type:fq.type,data:fq.b64}},
+      {type:"text",text:"Analisa este relatório clínico. Devolve apenas o JSON."}
+    ]}];
+  } else {
+    const txt = fq.text||"";
+    if(!txt.trim()) throw new Error("Ficheiro vazio ou ilegível");
+    messages=[{role:"user",content:`Analisa este relatório clínico:\n\n${txt}`}];
+  }
 
-  Object.entries(GROUPS).forEach(([gKey,g])=>{
-    const fields=grouped[gKey]||[];
-    const panel=document.createElement("div");
-    panel.className="panel";
-    panel.innerHTML=`
-      <div class="panel-header" style="background:${g.color};gap:10px">
-        <span style="font-size:17px">${g.icon}</span>
-        <span>${g.label}</span>
-        <span class="badge" id="badge-${gKey}" style="margin-left:auto;background:rgba(255,255,255,.2);color:#fff">0/${fields.length}</span>
-      </div>
-      <div class="panel-body" id="group-${gKey}"></div>`;
-    container.appendChild(panel);
-
-    const body=document.getElementById("group-"+gKey);
-    fields.forEach(f=>{
-      const isLong=LONG_FIELDS.has(f.key);
-      const wrap=document.createElement("div");
-      wrap.style.cssText="display:flex;flex-direction:column;gap:4px";
-      wrap.innerHTML=`
-        <label class="field-label" for="field-${f.key}">
-          ${f.label}
-          <span class="badge" id="ai-badge-${f.key}" style="display:none;background:#dcfce7;color:#166534;font-size:10px">IA</span>
-        </label>
-        ${isLong
-          ?`<textarea class="fi" id="field-${f.key}" rows="3" placeholder="Preencher…" oninput="onFieldChange('${f.key}',this.value)"></textarea>`
-          :`<input class="fi" type="text" id="field-${f.key}" placeholder="Preencher…" oninput="onFieldChange('${f.key}',this.value)">`
-        }`;
-      body.appendChild(wrap);
-    });
+  const res=await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "x-api-key":state.apiKey,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true"
+    },
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,system:SYSTEM_PROMPT,messages})
   });
+  if(!res.ok){
+    let errData; try{errData=await res.json();}catch{errData={};}
+    const errMsg = errData?.error?.message || `HTTP ${res.status} ${res.statusText}`;
+    throw new Error(`API: ${errMsg}`);
+  }
+  const json=await res.json();
+  const raw=json.content?.[0]?.text||"";
+  if(!raw) throw new Error("API devolveu resposta vazia");
+  let parsed;
+  try{ parsed=JSON.parse(raw.replace(/```json|```/g,"").trim()); }
+  catch(e){ throw new Error(`JSON inválido na resposta: ${raw.substring(0,100)}`); }
+  return parsed;
 }
 
-function onFieldChange(key,value){
-  state.editData[key]=value;
-  const el=document.getElementById("field-"+key);
-  if(el) el.classList.toggle("filled",value!=="");
+// ── Form ────────────────────────────────────────────────────
+function buildFormGroups(){
+  const container = document.getElementById("form-groups");
+  const grouped = {};
+  FIELDS.forEach(f=>{
+    if(!grouped[f.group]) grouped[f.group]=[];
+    grouped[f.group].push(f);
+  });
+  container.innerHTML = Object.entries(grouped).map(([gkey,fields])=>{
+    const g = GROUPS[gkey]||{label:gkey,icon:"",color:"#1e4d7a"};
+    return `<div class="panel" style="margin-bottom:16px">
+      <div class="panel-header" style="background:${g.color};gap:8px">
+        <span>${g.icon}</span><span>${g.label}</span>
+      </div>
+      <div class="panel-body">
+        ${fields.map(f=>`
+          <div style="${LONG_FIELDS.has(f.key)?"grid-column:1/-1":""}">
+            <label class="field-label" for="f_${f.key}">${f.label}</label>
+            ${LONG_FIELDS.has(f.key)
+              ? `<textarea id="f_${f.key}" class="fi" rows="3" oninput="onFieldChange('${f.key}',this.value)"></textarea>`
+              : `<input type="text" id="f_${f.key}" class="fi" oninput="onFieldChange('${f.key}',this.value)">`
+            }
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function onFieldChange(key,val){
+  state.editData[key]=val;
+  const el=document.getElementById("f_"+key);
+  if(el) el.classList.toggle("filled",!!val);
   updateFormProgress();
 }
 
 function updateFormFields(){
   FIELDS.forEach(f=>{
-    const el=document.getElementById("field-"+f.key);
+    const el=document.getElementById("f_"+f.key);
     if(!el) return;
     el.value=state.editData[f.key]||"";
-    el.classList.toggle("filled",(state.editData[f.key]||"")!=="");
-    const aiBadge=document.getElementById("ai-badge-"+f.key);
-    if(aiBadge) aiBadge.style.display=state.confidence[f.key]==="high"?"inline":"none";
+    el.classList.toggle("filled",!!state.editData[f.key]);
   });
   updateFormProgress();
 }
 
 function updateFormProgress(){
   const filled=FIELDS.filter(f=>state.editData[f.key]).length;
-  const pct=Math.round((filled/FIELDS.length)*100);
-  document.getElementById("form-progress-label").textContent=`${filled}/${FIELDS.length} (${pct}%)`;
+  const total=FIELDS.length;
+  const pct=Math.round((filled/total)*100);
+  document.getElementById("form-progress-label").textContent=`${filled}/${total} (${pct}%)`;
   document.getElementById("form-progress-bar").style.width=pct+"%";
-
-  Object.keys(GROUPS).forEach(gKey=>{
-    const fields=FIELDS.filter(f=>f.group===gKey);
-    const f=fields.filter(f=>state.editData[f.key]).length;
-    const badge=document.getElementById("badge-"+gKey);
-    if(badge) badge.textContent=`${f}/${fields.length}`;
-  });
 }
 
 function clearForm(){
@@ -869,10 +1055,10 @@ function clearForm(){
 
 function newRecord(){
   clearForm();
-  showTab("upload",document.querySelectorAll(".tab-btn")[0]);
+  showTab("form",document.querySelectorAll(".tab-btn")[1]);
 }
 
-// ── Save record ───────────────────────────────────────────────
+// ── Save Record ───────────────────────────────────────────────
 async function saveRecord(){
   const btn=document.getElementById("save-btn");
   btn.disabled=true;
@@ -896,7 +1082,7 @@ async function saveRecord(){
   btn.innerHTML="💾 Guardar e Partilhar";
 
   if(ok){showNotif("✅ Registo guardado e partilhado com a equipa!","ok");}
-  else{showNotif("⚠️ Guardado localmente (sem ligação ao JSONBin)","err");}
+  else{}
 
   showTab("database",document.querySelectorAll(".tab-btn")[2]);
   renderDB();
@@ -904,11 +1090,29 @@ async function saveRecord(){
 
 // ── Render DB ─────────────────────────────────────────────────
 function renderDB(){
-  const recs=state.records;
-  document.getElementById("db-count").textContent=`${recs.length} doente${recs.length!==1?"s":""}`;
+  const searchVal = (document.getElementById("db-search")||{value:""}).value.toLowerCase();
+  const estadoFilter = (document.getElementById("db-filter-estado")||{value:""}).value;
+
+  let recs = state.records;
+
+  // Apply filters
+  if(searchVal){
+    recs = recs.filter(r =>
+      (r.nome||"").toLowerCase().includes(searchVal) ||
+      (r.processo||"").toLowerCase().includes(searchVal) ||
+      (r.diagnosticoPrincipal||"").toLowerCase().includes(searchVal) ||
+      (r.servico||"").toLowerCase().includes(searchVal) ||
+      (r.tipologia||"").toLowerCase().includes(searchVal)
+    );
+  }
+  if(estadoFilter){
+    recs = recs.filter(r => (r.estadoActual||"").includes(estadoFilter));
+  }
+
+  document.getElementById("db-count").textContent=`${state.records.length} doente${state.records.length!==1?"s":""}${recs.length!==state.records.length?" ("+recs.length+" filtrado"+(recs.length!==1?"s":"")+")":" "}`;
   document.getElementById("db-loading").style.display="none";
 
-  if(recs.length===0){
+  if(state.records.length===0){
     document.getElementById("db-empty").style.display="block";
     document.getElementById("db-table-wrap").style.display="none";
     document.getElementById("kpi-grid").style.display="none";
@@ -918,21 +1122,37 @@ function renderDB(){
   document.getElementById("db-empty").style.display="none";
   document.getElementById("db-table-wrap").style.display="block";
   document.getElementById("kpi-grid").style.display="grid";
-  document.getElementById("export-btn").disabled=false;
+
+  // Helper: truncate long text for table cells
+  function trunc(str,max){
+    if(!str) return "—";
+    return str.length > max ? str.substring(0,max)+"…" : str;
+  }
 
   const tbody=document.getElementById("db-tbody");
   tbody.innerHTML=recs.map((r,i)=>{
     const bs=badgeStyle(r.estadoActual);
-    return `<tr class="${i%2===0?"":"even"}">
+    return `<tr>
       <td style="font-weight:700;color:#1e4d7a;font-family:'IBM Plex Mono',monospace;white-space:nowrap">${r.processo||"—"}</td>
-      <td style="font-weight:600;white-space:nowrap">${r.nome||"—"}</td>
-      <td style="color:#475569;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.diagnosticoPrincipal||"—"}</td>
-      <td style="text-align:center">${r.barthelAdmissao||"—"}</td>
-      <td style="text-align:center">${r.barthelAlta||"—"}</td>
-      <td>${r.tipologia?`<span class="badge" style="background:#dbeafe;color:#1d4ed8">${r.tipologia}</span>`:"—"}</td>
-      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.destinoAlta||"—"}</td>
-      <td><span class="badge" style="background:${bs.bg};color:${bs.text}">${r.estadoActual||"—"}</span></td>
-      <td><span class="badge" style="background:#f5f3ff;color:#6d28d9">${r._savedBy||"—"}</span></td>
+      <td style="font-weight:600;white-space:nowrap;min-width:140px">${r.nome||"—"}</td>
+      <td style="color:#64748b;white-space:nowrap;font-size:11px">${r.dataNasc||"—"}</td>
+      <td style="color:#475569;white-space:nowrap">${r.servico||"—"}</td>
+      <td style="max-width:200px" title="${r.diagnosticoPrincipal||""}">${trunc(r.diagnosticoPrincipal,40)}</td>
+      <td style="text-align:center;font-weight:600">${r.barthelAdmissao||"—"}</td>
+      <td style="text-align:center;font-weight:600">${r.barthelAlta||"—"}</td>
+      <td style="text-align:center">${r.morseAdmissao||"—"}</td>
+      <td style="text-align:center">${r.morseAlta||"—"}</td>
+      <td style="text-align:center">${r.bradenAdmissao||"—"}</td>
+      <td style="text-align:center">${r.mifAdmissao||"—"}</td>
+      <td style="text-align:center">${r.mifAlta||"—"}</td>
+      <td style="max-width:180px;font-size:11px;color:#475569" title="${r.avaliacaoFisiatria||""}">${trunc(r.avaliacaoFisiatria,35)}</td>
+      <td style="max-width:180px;font-size:11px;color:#475569" title="${r.planoFisiatria||""}">${trunc(r.planoFisiatria,35)}</td>
+      <td>${r.tipologia?`<span class="badge" style="background:#dbeafe;color:#1d4ed8;white-space:nowrap">${r.tipologia}</span>`:"—"}</td>
+      <td style="white-space:nowrap;color:#475569">${r.destinoAlta||"—"}</td>
+      <td style="max-width:140px;font-size:11px" title="${r.unidadeDestino||""}">${trunc(r.unidadeDestino,25)}</td>
+      <td style="white-space:nowrap;font-size:11px;color:#64748b">${r.dataPrevistAlta||"—"}</td>
+      <td><span class="badge" style="background:${bs.bg};color:${bs.text};white-space:nowrap">${r.estadoActual||"—"}</span></td>
+      <td><span class="badge" style="background:#f5f3ff;color:#6d28d9;white-space:nowrap">${r._savedBy||"—"}</span></td>
       <td style="color:#94a3b8;font-size:11px;white-space:nowrap">${r._savedAt||"—"}</td>
       <td>
         <div style="display:flex;gap:5px">
@@ -943,7 +1163,7 @@ function renderDB(){
     </tr>`;
   }).join("");
 
-  renderKPIs(recs);
+  renderKPIs(state.records);
 }
 
 function editRecord(id){
@@ -981,9 +1201,9 @@ function closeModal(){document.getElementById("modal").style.display="none";}
 function renderKPIs(recs){
   const kpis=[
     {label:"Total Doentes",value:recs.length,icon:"👥",color:"#1e4d7a"},
-    {label:"Aguardam RNCCI",value:recs.filter(r=>r.estadoActual?.includes("aguarda RNCCI")).length,icon:"⏳",color:"#d97706"},
-    {label:"Alta c/ Vaga",value:recs.filter(r=>r.estadoActual?.includes("vaga")).length,icon:"✅",color:"#059669"},
-    {label:"Transferidos",value:recs.filter(r=>r.estadoActual?.includes("Transferido")).length,icon:"🚗",color:"#7c3aed"},
+    {label:"Aguardam RNCCI",value:recs.filter(r=>(r.estadoActual||"").includes("aguarda RNCCI")).length,icon:"⏳",color:"#d97706"},
+    {label:"Alta c/ Vaga",value:recs.filter(r=>(r.estadoActual||"").includes("vaga")).length,icon:"✅",color:"#059669"},
+    {label:"Transferidos",value:recs.filter(r=>(r.estadoActual||"").includes("Transferido")).length,icon:"🚗",color:"#7c3aed"},
     {label:"Colaboradores",value:new Set(recs.map(r=>r._savedBy).filter(Boolean)).size,icon:"👤",color:"#0369a1"},
   ];
   document.getElementById("kpi-grid").innerHTML=kpis.map(s=>`
@@ -993,75 +1213,175 @@ function renderKPIs(recs){
     </div>`).join("");
 }
 
-// ── Export PDF (landscape) ───────────────────────────────────
-function exportPDF(){
+// ── Export DOC (Word, vertical, um doente por secção) ───────
+function exportDOC(){
   if(!state.records.length){ showNotif("Sem registos para exportar","err"); return; }
 
   const now = new Date().toLocaleString("pt-PT");
-  const cols = [
-    {key:"processo",    label:"Nº Processo"},
-    {key:"nome",        label:"Nome"},
-    {key:"dataNasc",    label:"Nasc."},
-    {key:"servico",     label:"Serviço"},
-    {key:"dataInternamento", label:"Internamento"},
-    {key:"diagnosticoPrincipal", label:"Diagnóstico Principal"},
-    {key:"barthelAdmissao", label:"Barthel Adm."},
-    {key:"barthelAlta",     label:"Barthel Alta"},
-    {key:"mifAdmissao",     label:"MIF Adm."},
-    {key:"mifAlta",         label:"MIF Alta"},
-    {key:"morseAdmissao",        label:"Escala de Morse Admissão (0–125)", group:"admissao"},
-  {key:"morseAlta",            label:"Escala de Morse Alta (0–125)",     group:"evolucaoFuncional"},
-    {key:"tipologia",       label:"Tipologia RNCCI"},
-    {key:"destinoAlta",     label:"Destino Alta"},
-    {key:"estadoActual",    label:"Estado"},
-    {key:"_savedBy",        label:"Registado por"},
-    {key:"_savedAt",        label:"Data Registo"},
+  const date = new Date().toISOString().slice(0,10);
+
+  const FIELD_GROUPS = [
+    { label:"👤 Identificação", fields:[
+      {key:"processo",label:"Nº Processo"},{key:"nome",label:"Nome Completo"},
+      {key:"dataNasc",label:"Data Nascimento"},{key:"utente",label:"Nº Utente SNS"},
+      {key:"servico",label:"Serviço / Enfermaria"},{key:"cama",label:"Cama"},
+      {key:"dataInternamento",label:"Data Internamento"},{key:"medico",label:"Médico Responsável"},
+    ]},
+    { label:"🏥 Admissão & Escalas", fields:[
+      {key:"diagnosticoPrincipal",label:"Diagnóstico Principal"},
+      {key:"comorbilidades",label:"Comorbilidades"},
+      {key:"barthelAdmissao",label:"Barthel Admissão"},{key:"barthelAlta",label:"Barthel Alta"},
+      {key:"morseAdmissao",label:"Morse Admissão"},{key:"morseAlta",label:"Morse Alta"},
+      {key:"bradenAdmissao",label:"Braden Admissão"},{key:"bradenAlta",label:"Braden Alta"},
+      {key:"mifAdmissao",label:"MIF Admissão"},{key:"mifAlta",label:"MIF Alta"},
+      {key:"glasgowAdmissao",label:"Glasgow Admissão"},
+      {key:"orientacao",label:"Orientação"},{key:"comunicacao",label:"Comunicação"},
+      {key:"marchaTransferencias",label:"Marcha / Transferências"},
+    ]},
+    { label:"📈 Evolução Clínica & Fisiatria", fields:[
+      {key:"planoTerapeutico",label:"Plano Terapêutico Inicial"},
+      {key:"intercorrencias",label:"Intercorrências"},
+      {key:"dataFisiatria",label:"Data Avaliação Fisiatria"},
+      {key:"diagnosticoFuncional",label:"Diagnóstico Funcional"},
+      {key:"objectivosReabilitacao",label:"Objectivos Reabilitação"},
+      {key:"avaliacaoFisiatria",label:"Avaliação de Fisiatria"},
+      {key:"planoFisiatria",label:"Plano de Fisiatria"},
+    ]},
+    { label:"🩺 Terapias", fields:[
+      {key:"fisioterapia",label:"Fisioterapia"},
+      {key:"terapiaOcupacional",label:"Terapia Ocupacional"},
+      {key:"terapiaFala",label:"Terapia da Fala"},
+      {key:"psicologia",label:"Psicologia"},
+      {key:"servicoSocial",label:"Serviço Social"},
+      {key:"avaliacaoAssistenteSocial",label:"Avaliação Assistente Social"},
+      {key:"nutricao",label:"Nutrição / Dietética"},
+    ]},
+    { label:"📝 Proposta RNCCI", fields:[
+      {key:"tipologia",label:"Tipologia Proposta"},
+      {key:"justificacao",label:"Justificação Clínica"},
+      {key:"necesidadesTecnicas",label:"Necessidades Técnicas"},
+    ]},
+    { label:"🚪 Alta & Destino", fields:[
+      {key:"destinoAlta",label:"Destino Alta"},
+      {key:"unidadeDestino",label:"Unidade / Local de Destino"},
+      {key:"dataPrevistAlta",label:"Data Prevista Alta"},
+      {key:"dataEfectivaAlta",label:"Data Efectiva Alta"},
+      {key:"notaAltaEnfermagem",label:"Nota de Alta de Enfermagem"},
+      {key:"notaAltaMedica",label:"Nota de Alta Médica"},
+    ]},
+    { label:"📊 Sinais Vitais & Glicemia", fields:[
+      {key:"svPrimeiraData",label:"Data 1ª Avaliação"},
+      {key:"svPrimeiraPA",label:"PA 1ª (mmHg)"},
+      {key:"svPrimeiraFC",label:"FC 1ª (bpm)"},
+      {key:"svPrimeiraT",label:"T 1ª (ºC)"},
+      {key:"svPrimeiraSatO2",label:"SatO2 1ª (%)"},
+      {key:"svPrimeiraGlic",label:"Glicemia 1ª (mg/dl)"},
+      {key:"svUltimaData",label:"Data Última Avaliação"},
+      {key:"svUltimaPA",label:"PA Última (mmHg)"},
+      {key:"svUltimaFC",label:"FC Última (bpm)"},
+      {key:"svUltimaT",label:"T Última (ºC)"},
+      {key:"svUltimaSatO2",label:"SatO2 Última (%)"},
+      {key:"svUltimaGlic",label:"Glicemia Última (mg/dl)"},
+    ]},
   ];
 
-  const rows = state.records.map(r =>
-    cols.map(c => `<td style="padding:5px 8px;border:1px solid #ddd;font-size:10px;white-space:nowrap">${r[c.key]||"—"}</td>`).join("")
-  );
+  function renderPatient(r, idx){
+    const isLast = idx === state.records.length - 1;
+    const nome = r.nome || "Doente sem nome";
+    const processo = r.processo ? ` — Proc. ${r.processo}` : "";
 
-  const html = `<!DOCTYPE html>
-<html lang="pt">
+    let html = `
+    <div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:6pt">
+        <tr>
+          <td style="background:#1e4d7a;color:#fff;padding:7pt 10pt;font-family:Arial;font-size:11pt;font-weight:bold">
+            ${nome}${processo}
+          </td>
+          <td style="background:#1e4d7a;color:rgba(255,255,255,0.8);padding:7pt 10pt;font-family:Arial;font-size:8pt;text-align:right;white-space:nowrap">
+            Registado por ${r._savedBy||"—"} · ${r._savedAt||"—"}
+          </td>
+        </tr>
+      </table>`;
+
+    FIELD_GROUPS.forEach(g => {
+      const filledFields = g.fields.filter(f => r[f.key] && r[f.key].trim() !== "");
+      if(!filledFields.length) return;
+
+      html += `<p style="font-family:Arial;font-size:8.5pt;font-weight:bold;color:#1e4d7a;background:#e8f0f8;padding:3pt 8pt;margin:5pt 0 2pt;border-left:3pt solid #1e4d7a">${g.label}</p>`;
+      html += `<table style="width:100%;border-collapse:collapse;margin-bottom:3pt">`;
+
+      filledFields.forEach((f,i) => {
+        const bg = i%2===0 ? "#ffffff" : "#f8fafc";
+        const val = (r[f.key]||"").replace(/\n/g,"<br>");
+        html += `<tr>
+          <td style="background:#f0f4f8;padding:3pt 8pt;font-family:Arial;font-size:8pt;font-weight:bold;color:#334155;border:0.5pt solid #d1dae5;width:28%;vertical-align:top;white-space:nowrap">${f.label}</td>
+          <td style="background:${bg};padding:3pt 8pt;font-family:Arial;font-size:8pt;color:#1a2332;border:0.5pt solid #d1dae5;width:72%;vertical-align:top;line-height:1.4">${val}</td>
+        </tr>`;
+      });
+
+      html += `</table>`;
+    });
+
+    html += `</div>`;
+
+    // Explicit Word page break paragraph after each patient except last
+    if(!isLast){
+      html += `<p style="margin:0;font-size:1pt;line-height:1pt"><br clear="all" style="mso-special-character:line-break;page-break-before:always"></p>`;
+    }
+
+    return html;
+  }
+
+  const patientsHTML = state.records.map((r,i) => renderPatient(r,i)).join("\n");
+
+  const docHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">
 <head>
 <meta charset="UTF-8">
-<title>RNCCI — Base de Dados</title>
+<title>RNCCI ULSSA ${date}</title>
+<!--[if gte mso 9]><xml><w:WordDocument>
+  <w:View>Print</w:View>
+  <w:Zoom>90</w:Zoom>
+  <w:DoNotOptimizeForBrowser/>
+</w:WordDocument></xml><![endif]-->
 <style>
-  @page { size: A4 landscape; margin: 12mm; }
-  body { font-family: Arial, sans-serif; font-size: 11px; color: #1a2332; }
-  h1 { font-size: 14px; color: #1e4d7a; margin-bottom: 2px; }
-  .sub { font-size: 10px; color: #64748b; margin-bottom: 14px; }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: #1e4d7a; color: #fff; padding: 6px 8px; font-size: 10px; text-align: left; white-space: nowrap; border: 1px solid #1e4d7a; }
-  tr:nth-child(even) td { background: #f0f4f8; }
-  .footer { margin-top: 10px; font-size: 9px; color: #94a3b8; text-align: right; }
+  @page WordSection1 { size: 595pt 842pt; margin: 35pt 40pt 35pt 40pt; }
+  p.pagebreak { page-break-after: always; mso-break-type: page-break; }
+  div.WordSection1 { page: WordSection1; }
+  body { font-family: Arial; font-size: 8pt; background:#fff; }
 </style>
 </head>
 <body>
-  <h1>Protocolo Público ULSSA | TS HEFP — Gestão Dados Clínicos</h1>
-  <div class="sub">Base de Dados RNCCI · ${state.records.length} doente${state.records.length!==1?"s":""} · Exportado em ${now}</div>
-  <table>
-    <thead><tr>${cols.map(c=>`<th>${c.label}</th>`).join("")}</tr></thead>
-    <tbody>${rows.map(r=>`<tr>${r}</tr>`).join("")}</tbody>
-  </table>
-  <div class="footer">Gerado automaticamente · Protocolo Público ULSSA | TS HEFP</div>
-  <script>window.onload=()=>{window.print();}<\/script>
+<div class="WordSection1">
+
+<table style="width:100%;border-collapse:collapse;margin-bottom:16pt">
+  <tr>
+    <td style="background:#0f2d4a;color:#fff;padding:10pt 14pt;font-family:Arial">
+      <div style="font-size:14pt;font-weight:bold">🏥 Protocolo Público ULSSA | TS HEFP</div>
+      <div style="font-size:9pt;margin-top:3pt;opacity:0.85">Base de Dados RNCCI — ${state.records.length} doente${state.records.length!==1?"s":""} · Exportado em ${now}</div>
+    </td>
+    <td style="background:#0f2d4a;color:rgba(255,255,255,0.6);padding:10pt 14pt;font-family:Arial;font-size:8pt;text-align:right;vertical-align:bottom">
+      Documento Confidencial
+    </td>
+  </tr>
+</table>
+
+${patientsHTML}
+
+</div>
 </body>
 </html>`;
 
-  const win = window.open("","_blank");
-  win.document.write(html);
-  win.document.close();
-}
-
-// ── Export CSV ────────────────────────────────────────────────
-function exportCSV(){
-  if(!state.records.length) return;
-  const headers=[...FIELDS.map(f=>f.label),"Guardado por","Quando"].join(";");
-  const rows=state.records.map(r=>[...FIELDS.map(f=>`"${(r[f.key]||"").replace(/"/g,'""')}"`),`"${r._savedBy||""}"`,`"${r._savedAt||""}"`].join(";"));
-  const blob=new Blob(["\uFEFF"+[headers,...rows].join("\n")],{type:"text/csv;charset=utf-8;"});
-  Object.assign(document.createElement("a"),{href:URL.createObjectURL(blob),download:"RNCCI_ULSSA_Dados.csv"}).click();
+  const blob = new Blob(["\uFEFF" + docHTML], { type:"application/msword;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "RNCCI_ULSSA_" + date + ".doc";
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+  showNotif("✅ Documento Word descarregado com sucesso","ok");
 }
 
 // ── Settings ──────────────────────────────────────────────────
@@ -1072,61 +1392,35 @@ function saveApiKey(){
   lsSet("rncci_apikey",k);
   updateSettingsUI();
   document.getElementById("ai-key-warning").style.display="none";
+  renderAIInfo();
   showNotif("Chave API guardada","ok");
 }
 
-function saveJsonBinSettings(){
-  const id=document.getElementById("jsonbin-id").value.trim();
-  const key=document.getElementById("jsonbin-key").value.trim();
-  if(!id||!key){showNotif("Preencha o BIN ID e a Master Key","err");return;}
-  state.jsonBinId=id; state.jsonBinKey=key;
-  lsSet("rncci_jbid",id); lsSet("rncci_jbkey",key);
-  showNotif("Configurações JSONBin guardadas","ok");
+function saveGitHubSettings(){
+  const url=document.getElementById("gh-repo").value.trim();
+  if(!url){showNotif("Preencha o URL do Web App","err");return;}
+  state.gasUrl=url;
+  lsSet("rncci_gasurl",url);
+  showNotif("URL guardado","ok");
   syncNow();
 }
 
-async function testJsonBin(){
+async function testGitHub(){
   const el=document.getElementById("jsonbin-test-result");
-  el.innerHTML=`<span style="color:#64748b">A testar ligação…</span>`;
-  const id=document.getElementById("jsonbin-id").value.trim();
-  const key=document.getElementById("jsonbin-key").value.trim();
-  if(!id||!key){el.innerHTML=`<span style="color:#dc2626">Preencha o BIN ID e a Master Key primeiro.</span>`;return;}
+  const url=document.getElementById("gh-repo").value.trim();
+  if(!url){el.innerHTML=`<span style="color:#dc2626">⚠️ Preencha o URL do Web App</span>`;return;}
+  el.innerHTML=`<span style="color:#64748b">⏳ A testar ligação…</span>`;
   try{
-    const r=await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`,{headers:{"X-Master-Key":key,"X-Bin-Meta":false}});
-    if(r.ok){el.innerHTML=`<span style="color:#059669;font-weight:600">✅ Ligação bem sucedida! Base de dados partilhada disponível.</span>`;}
-    else{el.innerHTML=`<span style="color:#dc2626">❌ Erro ${r.status}: verifique o BIN ID e a Master Key.</span>`;}
-  }catch{el.innerHTML=`<span style="color:#dc2626">❌ Sem ligação à internet ou erro de rede.</span>`;}
-}
-
-function clearLocalData(){
-  if(confirm("Limpar todos os dados locais? (Configurações e registo de utilizador)")){
-    ["rncci_user","rncci_apikey","rncci_jbid","rncci_jbkey"].forEach(k=>localStorage.removeItem(k));
-    showNotif("Dados locais limpos","ok");
-    updateSettingsUI();
+    const r=await fetch(url+"?action=get");
+    if(r.ok){
+      const d=await r.json();
+      el.innerHTML=`<span style="color:#059669">✅ Ligação OK — ${d.records?.length||0} registos encontrados</span>`;
+    } else {
+      el.innerHTML=`<span style="color:#dc2626">❌ Erro ${r.status}</span>`;
+    }
+  }catch(e){
+    el.innerHTML=`<span style="color:#dc2626">❌ ${e.message}</span>`;
   }
-}
-
-function updateSettingsUI(){
-  const apiOk=!!state.apiKey;
-  document.getElementById("api-key-status").textContent=apiOk?"Configurada ✅":"Não configurada";
-  document.getElementById("api-key-status").style.color=apiOk?"#059669":"#dc2626";
-  document.getElementById("ai-key-badge").innerHTML=`<span class="badge" style="background:${apiOk?"#dcfce7":"#fee2e2"};color:${apiOk?"#166534":"#dc2626"}">${apiOk?"✅ Activa":"❌ Não configurada"}</span>`;
-  if(state.apiKey) document.getElementById("api-key-input").placeholder="••••••••••••••••";
-  if(state.jsonBinId) document.getElementById("jsonbin-id").value=state.jsonBinId;
-}
-
-function renderAIInfo(){
-  const hasKey=!!state.apiKey;
-  document.getElementById("ai-status-info").innerHTML=[
-    ["1","Upload","Arraste o relatório (PDF, imagem ou texto)"],
-    ["2","Extracção IA",hasKey?"Claude preenche os 40 campos automaticamente":"Configure a chave API para activar a IA"],
-    ["3","Revisão","Verifique e complete campos em falta"],
-    ["4","Partilhar","Registo fica disponível para toda a equipa"]
-  ].map(([n,t,d])=>`
-    <div style="display:flex;gap:11px;margin-bottom:12px">
-      <div style="width:24px;height:24px;min-width:24px;border-radius:50%;background:#1e4d7a;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">${n}</div>
-      <div><div style="font-weight:600;font-size:12px">${t}</div><div style="font-size:11px;color:#64748b;margin-top:1px">${d}</div></div>
-    </div>`).join("");
 }
 
 // ── Import JSON paste ────────────────────────────────────────
@@ -1137,7 +1431,6 @@ function importFromJSON(){
 
   let parsed;
   try{
-    // Accept raw JSON or wrapped in ```json ... ```
     const clean = raw.replace(/^```json\s*/i,"").replace(/```\s*$/,"").trim();
     parsed = JSON.parse(clean);
   } catch(e){
@@ -1148,7 +1441,6 @@ function importFromJSON(){
     return;
   }
 
-  // Merge into editData
   state.editData = {...EMPTY};
   FIELDS.forEach(f => {
     if(parsed[f.key] !== undefined && parsed[f.key] !== null)
@@ -1194,13 +1486,13 @@ function showNotif(msg,type){
 }
 
 // ── Auto-login ────────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded",()=>{
+window.addEventListener("DOMContentLoaded",async ()=>{
   const saved=lsGet("rncci_user");
   if(saved){
     state.user=saved;
     document.getElementById("login-screen").style.display="none";
     document.getElementById("app").style.display="block";
-    initApp();
+    await initApp();
   }
 });
 </script>
